@@ -2,6 +2,21 @@ doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
 
+        types:
+            gender_enum: App\Doctrine\Type\Core\GenderEnumType
+            division_role_enum: App\Doctrine\Type\Core\DivisionRoleEnumType
+            question_field_type_enum: App\Doctrine\Type\Modules\Survey\QuestionFieldTypeEnumType
+            payment_method_type_enum: App\Doctrine\Type\Shop\PaymentMethodTypeEnumType
+            delivery_type_enum: App\Doctrine\Type\Shop\DeliveryTypeEnumType
+            discount_applies_on_enum: App\Doctrine\Type\Shop\DiscountAppliesOnEnumType
+            game_key_type_enum: App\Doctrine\Type\Shop\GameKeyTypeEnumType
+            game_key_destination_enum: App\Doctrine\Type\Shop\GameKeyDestinationEnumType
+            order_status_enum: App\Doctrine\Type\Shop\OrderStatusEnumType
+            order_item_status_enum: App\Doctrine\Type\Shop\OrderItemStatusEnumType
+
+        mapping_types:
+            enum: string
+
         # IMPORTANT: You MUST configure your server version,
         # either here or in the DATABASE_URL env var (see .env file)
         #server_version: '13'

@@ -1,0 +1,20 @@
+# Source des données : code géographique de l'INSEE 2022 (https://www.insee.fr/fr/information/6051727) et données ISO (https://www.iso.org/obp/ui/fr/#iso:code:3166:FR) + modifications manuelles
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (1,'Guadeloupe','971');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (2,'Martinique','972');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (3,'Guyane','973');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (4,'La Réunion','974');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (6,'Mayotte','976');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (11,'Île-de-France','IDF');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (24,'Centre-Val de Loire','CVL');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (27,'Bourgogne-Franche-Comté','BFC');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (28,'Normandie','NOR');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (32,'Hauts-de-France','HDF');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (44,'Grand Est','GES');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (52,'Pays de la Loire','PDL');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (53,'Bretagne','BRE');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (75,'Nouvelle-Aquitaine','NAQ');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (76,'Occitanie','OCC');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (84,'Auvergne-Rhône-Alpes','ARA');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (93,'Provence-Alpes-Côte d''Azur','PAC');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (94,'Corse','20R');
+INSERT INTO geo_france_region(id,name,iso_code) VALUES (98,'Collectivités d’outre-mer','COM');
