@@ -2,7 +2,7 @@
 
 namespace App\Entity\Shop\AutomaticDelivery;
 
-use App\Entity\Core\User;
+use App\Entity\Core\User\User;
 
 interface AutomaticDeliveryInterface
 {

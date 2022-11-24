@@ -2,7 +2,9 @@
 
 namespace App\Entity\Shop;
 
-use App\Entity\Core\User;
+use App\Entity\Core\User\User;
+use App\Entity\Shop\GameKey\GameKey;
+use App\Entity\Shop\GameKey\GameKeyTypeEnum;
 use App\Repository\Shop\RedemptionCodeRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;

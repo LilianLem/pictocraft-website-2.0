@@ -2,7 +2,7 @@
 
 namespace App\Entity\Modules\Survey;
 
-use App\Entity\Core\User;
+use App\Entity\Core\User\User;
 use App\Repository\Modules\Survey\EntryRepository;
 use DateTimeImmutable;
 use DateTimeInterface;

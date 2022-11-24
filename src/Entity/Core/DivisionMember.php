@@ -2,6 +2,7 @@
 
 namespace App\Entity\Core;
 
+use App\Entity\Core\User\User;
 use App\Repository\Core\DivisionMemberRepository;
 use Doctrine\ORM\Mapping as ORM;
 

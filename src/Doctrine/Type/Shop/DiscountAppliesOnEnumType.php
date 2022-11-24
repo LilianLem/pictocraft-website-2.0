@@ -3,7 +3,7 @@
 namespace App\Doctrine\Type\Shop;
 
 use App\Doctrine\Type\EnumType;
-use App\Entity\Shop\DiscountAppliesOnEnum;
+use App\Entity\Shop\Discount\DiscountAppliesOnEnum;
 
 class DiscountAppliesOnEnumType extends EnumType
 {

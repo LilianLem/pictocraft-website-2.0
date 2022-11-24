@@ -2,7 +2,8 @@
 
 namespace App\Entity\Shop;
 
-use App\Entity\Core\User;
+use App\Entity\Core\User\User;
+use App\Entity\Shop\Order\Order;
 use App\Repository\Shop\WalletTransactionRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;

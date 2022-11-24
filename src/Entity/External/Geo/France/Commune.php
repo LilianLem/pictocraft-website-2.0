@@ -2,7 +2,6 @@
 
 namespace App\Entity\External\Geo\France;
 
-use App\Entity\Core\UserSettings;
 use App\Repository\External\Geo\France\CommuneRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;

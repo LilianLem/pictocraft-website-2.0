@@ -3,7 +3,7 @@
 namespace App\Doctrine\Type\Shop;
 
 use App\Doctrine\Type\EnumType;
-use App\Entity\Shop\OrderStatusEnum;
+use App\Entity\Shop\Order\OrderStatusEnum;
 
 class OrderStatusEnumType extends EnumType
 {

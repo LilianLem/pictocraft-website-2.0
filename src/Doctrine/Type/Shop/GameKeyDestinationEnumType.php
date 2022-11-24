@@ -3,7 +3,7 @@
 namespace App\Doctrine\Type\Shop;
 
 use App\Doctrine\Type\EnumType;
-use App\Entity\Shop\GameKeyDestinationEnum;
+use App\Entity\Shop\GameKey\GameKeyDestinationEnum;
 
 class GameKeyDestinationEnumType extends EnumType
 {

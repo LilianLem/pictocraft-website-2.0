@@ -2,7 +2,7 @@
 
 namespace App\Entity\Modules;
 
-use App\Entity\Core\User;
+use App\Entity\Core\User\User;
 use App\Repository\Modules\SecretSantaRepository;
 use DateTimeImmutable;
 use DateTimeInterface;

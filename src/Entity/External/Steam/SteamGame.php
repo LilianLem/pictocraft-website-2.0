@@ -2,7 +2,7 @@
 
 namespace App\Entity\External\Steam;
 
-use App\Entity\Core\UserSteamGame;
+use App\Entity\Core\User\UserSteamGame;
 use App\Repository\External\Steam\SteamGameRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;

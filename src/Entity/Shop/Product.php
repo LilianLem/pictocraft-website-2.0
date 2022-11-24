@@ -2,6 +2,7 @@
 
 namespace App\Entity\Shop;
 
+use App\Entity\Shop\OrderItem\OrderItem;
 use App\Repository\Shop\ProductRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;

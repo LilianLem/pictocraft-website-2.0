@@ -2,6 +2,7 @@
 
 namespace App\Entity\Shop;
 
+use App\Entity\Shop\Order\Order;
 use App\Repository\Shop\PaymentMethodRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
