@@ -7,10 +7,12 @@ use App\Entity\Shop\GameKey\GameKey;
 use App\Entity\Shop\GameKey\GameKeyTypeEnum;
 use App\Repository\Shop\RedemptionCodeRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RedemptionCodeRepository::class)]
 #[ORM\Table(name: 'shop_redemption_code')]
+#[UniqueEntity("code", message: "Ce code est déjà utilisé")]
 class RedemptionCode
 {
     #[ORM\Id]

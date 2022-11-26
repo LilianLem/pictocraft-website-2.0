@@ -7,10 +7,15 @@ use App\Repository\External\Geo\CountryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CountryRepository::class)]
 #[ORM\Table(name: 'geo_country')]
+#[UniqueEntity("isoCode_alpha2", message: "Ce code ISO est déjà utilisé")]
+#[UniqueEntity("isoCode_alpha3", message: "Ce code ISO est déjà utilisé")]
+#[UniqueEntity("name", message: "Ce pays est déjà renseigné")]
+#[UniqueEntity("nameForSorting", message: "Ce pays est déjà renseigné")]
 class Country
 {
     #[ORM\Id]

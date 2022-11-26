@@ -7,10 +7,12 @@ use App\Entity\Shop\RedemptionCode;
 use App\Repository\Shop\GameKey\GameKeyRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: GameKeyRepository::class)]
 #[ORM\Table(name: 'shop_game_key')]
+#[UniqueEntity("code", message: "Ce code est déjà renseigné")]
 class GameKey
 {
     #[ORM\Id]
@@ -53,7 +55,8 @@ class GameKey
     #[Assert\Length(max: 255, minMessage: "Le commentaire ne doit pas dépasser {{ limit }} caractères")]
     private ?string $comment = null;
 
-    #[ORM\Column]
+    #[ORM\Column(options: ["default" => "CURRENT_TIMESTAMP"])]
+    #[Assert\DateTime]
     private ?DateTimeImmutable $addedAt = null;
 
     #[ORM\Column(options: ["default" => true])]
@@ -67,7 +70,7 @@ class GameKey
     #[ORM\OneToOne(inversedBy: 'gameKey', cascade: ['persist', 'remove'])]
     private ?RedemptionCode $redeemedCode = null;
 
-    #[ORM\Column]
+    #[ORM\Column(options: ["unsigned" => true])]
     #[Assert\Range(min: 1, max: 5, minMessage: "La rareté doit être comprise entre 1 et 5", maxMessage: "La rareté doit être comprise entre 1 et 5")]
     #[Assert\NotBlank]
     private ?int $rarity = null;

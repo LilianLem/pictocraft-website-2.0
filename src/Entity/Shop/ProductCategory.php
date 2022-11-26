@@ -4,10 +4,17 @@ namespace App\Entity\Shop;
 
 use App\Repository\Shop\ProductCategoryRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ProductCategoryRepository::class)]
 #[ORM\Table(name: 'shop_product_category')]
+#[ORM\UniqueConstraint("product_category_unique", columns: ["product_id", "category_id"])]
+#[UniqueEntity(
+    fields: ["product", "category"],
+    errorPath: "category",
+    message: "Ce produit possède déjà cette catégorie",
+)]
 class ProductCategory
 {
     #[ORM\Id]

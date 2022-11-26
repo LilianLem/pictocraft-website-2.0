@@ -14,10 +14,12 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: 'shop_order')]
+#[UniqueEntity("reference", message: "Cette référence est déjà utilisée")]
 class Order
 {
     #[ORM\Id]
@@ -26,7 +28,7 @@ class Order
     private ?int $id = null;
 
     // TODO : il faudra vérifier si la regex ne bloque pas l'édition des anciennes commandes avec des références en lettres, et aussi trouver comment afficher un champ dans un formulaire sans qu'il soit modifiable (champ en disabled et non prise en compte de la valeur par Symfony si modifiée autrement lors de l'enregistrement)
-    #[ORM\Column(length: 9)]
+    #[ORM\Column(length: 9, unique: true)]
     #[Assert\Length(exactly: 9, exactMessage: "La référence doit compter exactement {{ limit }} caractères")]
     #[Assert\Regex(pattern: '\d{9}', message: "La référence doit être un nombre de 9 chiffres pour les nouvelles commandes")]
     #[Assert\NotBlank]
@@ -56,10 +58,12 @@ class Order
     private ?string $comment = null;
 
     #[ORM\Column(options: ["default" => "CURRENT_TIMESTAMP"])]
+    #[Assert\DateTime]
     private ?DateTimeImmutable $createdAt = null;
 
     // TODO : vérifier si la mise à jour de la date est fonctionnelle, càd seulement quand des choses sont modifiées
     #[ORM\Column(type: Types::DATETIME_MUTABLE, options: ["default" => "CURRENT_TIMESTAMP"], columnDefinition: "DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL on update CURRENT_TIMESTAMP")]
+    #[Assert\DateTime]
     private ?DateTimeInterface $updatedAt = null;
 
     #[ORM\Column(length: 20, nullable: true)]

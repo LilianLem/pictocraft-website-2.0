@@ -6,6 +6,7 @@ use App\Repository\Core\User\UserStatsRepository;
 use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserStatsRepository::class)]
 class UserStats
@@ -13,24 +14,32 @@ class UserStats
     #[ORM\Id]
     #[ORM\OneToOne(inversedBy: 'stats', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotBlank]
     private ?User $user = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Assert\DateTime]
     private ?DateTimeInterface $lastSteamCheckAt = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Assert\DateTime]
     private ?DateTimeInterface $lastLoginAt = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Assert\DateTime]
     private ?DateTimeInterface $lastRedeemedAt = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Assert\DateTime]
     private ?DateTimeInterface $lastLoginAttemptAt = null;
 
-    #[ORM\Column]
+    #[ORM\Column(options: ["unsigned" => true])]
+    #[Assert\PositiveOrZero(message: "Le nombre de tentatives de connexion ne peut pas être négatif")]
+    #[Assert\NotBlank]
     private ?int $nbLoginAttempts = null;
 
     #[ORM\Column(options: ["default" => false])]
+    #[Assert\NotBlank]
     private ?bool $gifted = null;
 
     public function getUser(): ?User

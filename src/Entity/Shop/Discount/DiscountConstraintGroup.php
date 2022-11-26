@@ -26,7 +26,7 @@ class DiscountConstraintGroup
     private Collection $constraints;
 
     // 0 = toutes les contraintes nécessaires
-    #[ORM\Column]
+    #[ORM\Column(options: ["unsigned" => true])]
     #[Assert\NotBlank]
     #[Assert\PositiveOrZero(message: "Au moins 1 contrainte est nécessaire pour que le groupe fonctionne. Si toutes les contraintes du groupe sont nécessaires, indique 0")]
     private ?int $constraintsNeeded = null;

@@ -6,9 +6,16 @@ use App\Repository\Core\DivisionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: DivisionRepository::class)]
+#[ORM\UniqueConstraint("division_unique", columns: ["name", "parent_id"])]
+#[UniqueEntity(
+    fields: ["name"],
+    errorPath: "name",
+    message: "Cette division existe déjà. Si tu souhaites donner un même nom à des sous-divisions de divisions différentes, il faut d'abord créer la division principale, puis la sélectionner lors de la création de la sous-division",
+)]
 class Division
 {
     #[ORM\Id]

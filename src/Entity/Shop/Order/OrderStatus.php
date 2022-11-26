@@ -26,6 +26,7 @@ class OrderStatus
     private $status = null;
 
     #[ORM\Column]
+    #[Assert\DateTime]
     #[Assert\NotBlank]
     private ?DateTimeImmutable $date = null;
 

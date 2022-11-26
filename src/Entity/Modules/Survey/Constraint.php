@@ -6,10 +6,25 @@ use App\Entity\Core\Role;
 use App\Entity\Core\User\User;
 use App\Repository\Modules\Survey\ConstraintRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ConstraintRepository::class)]
 #[ORM\Table(name: 'survey_constraint')]
+#[ORM\UniqueConstraint("survey_user_constraint_unique", columns: ["survey_id", "user_id"])]
+#[ORM\UniqueConstraint("survey_role_constraint_unique", columns: ["survey_id", "role_id"])]
+#[UniqueEntity(
+    fields: ["survey", "user"],
+    errorPath: "user",
+    ignoreNull: true,
+    message: "Cette contrainte existe déjà",
+)]
+#[UniqueEntity(
+    fields: ["survey", "role"],
+    errorPath: "role",
+    ignoreNull: true,
+    message: "Cette contrainte existe déjà",
+)]
 class Constraint
 {
     #[ORM\Id]

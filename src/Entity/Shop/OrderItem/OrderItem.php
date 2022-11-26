@@ -14,10 +14,17 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OrderItemRepository::class)]
 #[ORM\Table(name: 'shop_order_item')]
+#[ORM\UniqueConstraint("order_item_unique", columns: ["order_id", "item_id"])]
+#[UniqueEntity(
+    fields: ["order", "item"],
+    errorPath: "item",
+    message: "Cet article est déjà présent dans la commande",
+)]
 class OrderItem
 {
     #[ORM\Id]
@@ -66,6 +73,7 @@ class OrderItem
 
     // TODO : vérifier si la mise à jour de la date est fonctionnelle, càd seulement quand des choses sont modifiées
     #[ORM\Column(type: Types::DATETIME_MUTABLE, options: ["default" => "CURRENT_TIMESTAMP"], columnDefinition: "DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL on update CURRENT_TIMESTAMP")]
+    #[Assert\DateTime]
     private ?DateTimeInterface $updatedAt = null;
 
     #[ORM\Column(options: ["default" => 1, "unsigned" => true])]

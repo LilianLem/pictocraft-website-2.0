@@ -7,10 +7,12 @@ use App\Repository\External\Steam\SteamGameRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 // TODO : essayer de remplacer par IGDB qui offre plus de données, si l'ID Steam peut être comparé à l'ID IGDB
 #[ORM\Entity(repositoryClass: SteamGameRepository::class)]
+#[UniqueEntity("id", message: "Ce jeu est déjà dans la base")]
 class SteamGame
 {
     // ID Steam à insérer à la création

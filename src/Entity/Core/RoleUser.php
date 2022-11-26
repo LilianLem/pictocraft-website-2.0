@@ -7,9 +7,16 @@ use App\Repository\Core\RoleUserRepository;
 use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RoleUserRepository::class)]
+#[ORM\UniqueConstraint("role_user_unique", columns: ["role_id", "user_id"])]
+#[UniqueEntity(
+    fields: ["role", "user"],
+    errorPath: "role",
+    message: "Cet utilisateur possède déjà ce rôle",
+)]
 class RoleUser
 {
     #[ORM\Id]

@@ -6,10 +6,12 @@ use App\Repository\Shop\RedemptionCodeAccessRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RedemptionCodeAccessRepository::class)]
 #[ORM\Table(name: 'shop_redemption_code_access')]
+#[UniqueEntity("name", message: "Ce nom est déjà utilisé")]
 class RedemptionCodeAccess
 {
     #[ORM\Id]
@@ -18,6 +20,7 @@ class RedemptionCodeAccess
     private ?int $id = null;
 
     #[ORM\Column(length: 64)]
+    #[Assert\Length(max: 64, maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $name = null;
 

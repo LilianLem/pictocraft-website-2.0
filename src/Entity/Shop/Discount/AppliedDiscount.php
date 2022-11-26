@@ -6,10 +6,25 @@ use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\OrderItem\OrderItem;
 use App\Repository\Shop\Discount\AppliedDiscountRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AppliedDiscountRepository::class)]
 #[ORM\Table(name: 'shop_applied_discount')]
+#[ORM\UniqueConstraint("applied_discount_order_unique", columns: ["discount_id", "order_id"])]
+#[ORM\UniqueConstraint("applied_discount_order_item_unique", columns: ["discount_id", "order_item_id"])]
+#[UniqueEntity(
+    fields: ["discount", "order"],
+    errorPath: "discount",
+    ignoreNull: true,
+    message: "Cette réduction est déjà appliquée sur cette commande",
+)]
+#[UniqueEntity(
+    fields: ["discount", "orderItem"],
+    errorPath: "discount",
+    ignoreNull: true,
+    message: "Cette réduction est déjà appliquée sur cet article",
+)]
 class AppliedDiscount
 {
     #[ORM\Id]
@@ -28,16 +43,16 @@ class AppliedDiscount
     #[ORM\ManyToOne(inversedBy: 'appliedDiscounts')]
     private ?OrderItem $orderItem = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "La réduction fixe doit être supérieure à 0€. S'il s'agit d'un pourcentage de réduction, laissez ce champ vide")]
     private ?int $fixedDiscount = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "Le pourcentage de réduction doit être supérieur à 0%. S'il s'agit d'une réduction fixe, laissez ce champ vide")]
     #[Assert\LessThanOrEqual(100, message: "Le pourcentage de réduction ne peut pas dépasser 100%")]
     private ?int $percentageDiscount = null;
 
-    #[ORM\Column]
+    #[ORM\Column(options: ["unsigned" => true])]
     #[Assert\NotBlank]
     #[Assert\Positive(message: "Le montant de la réduction doit être supérieur à 0€")]
     private ?int $amount = null;

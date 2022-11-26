@@ -2,8 +2,10 @@
 
 namespace App\Entity\Core\User;
 
+use App\Entity\Core\Badge\BadgeUser;
 use App\Entity\Core\DivisionMember;
 use App\Entity\Core\GenderEnum;
+use App\Entity\Core\Notification\NotificationUser;
 use App\Entity\Core\Role;
 use App\Entity\Core\RoleUser;
 use App\Entity\Modules\SecretSanta;
@@ -19,11 +21,14 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
+#[UniqueEntity("username", message: "Ce pseudo est déjà utilisé")]
+#[UniqueEntity("votingCode", message: "Ce code de vote est déjà utilisé")]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -32,6 +37,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     // Le champ email n'est pas renseigné comme unique, car quand l'utilisateur est "supprimé", il sera gardé dans la BDD avec un mail générique commun à tous les comptes "supprimés" : deleted@pictocraft.fr
+    // TODO : il faudra donc développer une vérification du mail manuelle, ce qui permet d'ignorer ce mail générique
     #[ORM\Column(length: 180)]
     #[Assert\Email(message: "L'adresse mail renseignée est invalide")]
     #[Assert\NotBlank]
@@ -69,23 +75,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\NotBlank]
     private ?GenderEnum $gender = null;
 
-    // TODO : voir si contrainte Assert\Date nécessaire
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    #[Assert\Date]
     #[Assert\NotBlank]
     private ?DateTimeImmutable $birthday = null;
 
     #[ORM\Column(length: 64)]
     #[Assert\Length(max: 64, maxMessage: "Le texte ne peut pas dépasser {{ limit }} caractères")]
+    #[Assert\NotBlank]
     private ?string $firstLogin = null;
 
     #[ORM\Column(options: ["default" => 0])]
-    #[Assert\Range(min: 0, max: 4)]
+    #[Assert\Range(min: 0, max: 4, minMessage: "Le nombre d'avertissements ne peut pas être négatif", maxMessage: "Le nombre d'avertissements ne peut pas dépasser {{ limit }}")]
+    #[Assert\NotBlank]
     private ?int $warnings = null;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: DivisionMember::class, orphanRemoval: true)]
     private Collection $divisionRoles;
 
-    #[ORM\Column(length: 10)]
+    #[ORM\Column(length: 10, unique: true)]
     #[Assert\Length(exactly: 10, exactMessage: "Le code de vote doit compter exactement {{ limit }} chiffres")]
     #[Assert\Regex('/1\d{9}/', message: "Le code de vote doit être un entier entre 1000000000 et 1999999999")]
     private ?string $votingCode = null;
@@ -143,6 +151,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
     private ?UserConsents $userConsents = null;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: NotificationUser::class, orphanRemoval: true)]
+    private Collection $notifications;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: BadgeUser::class, orphanRemoval: true)]
+    private Collection $badges;
+
     // --------------------------------- \\
 
     public function __construct()
@@ -158,6 +172,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->surveyEntries = new ArrayCollection();
         $this->surveysAnsweredAnonymously = new ArrayCollection();
         $this->walletTransactions = new ArrayCollection();
+        $this->notifications = new ArrayCollection();
+        $this->badges = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -724,6 +740,66 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         $this->userConsents = $userConsents;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, NotificationUser>
+     */
+    public function getNotifications(): Collection
+    {
+        return $this->notifications;
+    }
+
+    public function addNotification(NotificationUser $notification): self
+    {
+        if (!$this->notifications->contains($notification)) {
+            $this->notifications->add($notification);
+            $notification->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNotification(NotificationUser $notification): self
+    {
+        if ($this->notifications->removeElement($notification)) {
+            // set the owning side to null (unless already changed)
+            if ($notification->getUser() === $this) {
+                $notification->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, BadgeUser>
+     */
+    public function getBadges(): Collection
+    {
+        return $this->badges;
+    }
+
+    public function addBadge(BadgeUser $badge): self
+    {
+        if (!$this->badges->contains($badge)) {
+            $this->badges->add($badge);
+            $badge->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBadge(BadgeUser $badge): self
+    {
+        if ($this->badges->removeElement($badge)) {
+            // set the owning side to null (unless already changed)
+            if ($badge->getUser() === $this) {
+                $badge->setUser(null);
+            }
+        }
 
         return $this;
     }

@@ -6,10 +6,12 @@ use App\Repository\Shop\DeliveryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: DeliveryRepository::class)]
 #[ORM\Table(name: 'shop_delivery')]
+#[UniqueEntity("name", message: "Ce mode de livraison existe déjà")]
 class Delivery
 {
     #[ORM\Id]
@@ -18,7 +20,7 @@ class Delivery
     private ?int $id = null;
 
     #[ORM\Column(length: 64)]
-    #[Assert\Length(min: 3, max: 32, minMessage: "Le nom doit faire au minimum {{ limit }} caractères", maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
+    #[Assert\Length(min: 3, max: 64, minMessage: "Le nom doit faire au minimum {{ limit }} caractères", maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $name = null;
 

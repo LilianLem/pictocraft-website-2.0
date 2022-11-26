@@ -50,6 +50,11 @@ class Survey
     #[Assert\NotBlank]
     private ?bool $editable = null;
 
+    // 0 = illimité
+    #[ORM\Column(options: ["unsigned" => true])]
+    #[Assert\PositiveOrZero(message: "Le nombre de réponses autorisées doit être positif (0 = illimité)")]
+    private ?int $numberOfEntriesAllowed = null;
+
     #[ORM\Column(nullable: true)]
     private ?int $allowedModifications = null;
 
@@ -176,6 +181,18 @@ class Survey
     public function setEditable(bool $editable): self
     {
         $this->editable = $editable;
+
+        return $this;
+    }
+
+    public function getNumberOfEntriesAllowed(): ?int
+    {
+        return $this->numberOfEntriesAllowed;
+    }
+
+    public function setNumberOfEntriesAllowed(int $numberOfEntriesAllowed): self
+    {
+        $this->numberOfEntriesAllowed = $numberOfEntriesAllowed;
 
         return $this;
     }

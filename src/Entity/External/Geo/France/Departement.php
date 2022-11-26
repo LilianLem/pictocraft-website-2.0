@@ -7,10 +7,13 @@ use App\Repository\External\Geo\France\DepartementRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: DepartementRepository::class)]
 #[ORM\Table(name: 'geo_france_departement')]
+#[UniqueEntity("inseeCode", message: "Ce code INSEE est déjà utilisé")]
+#[UniqueEntity("name", message: "Ce département est déjà renseigné")]
 class Departement
 {
     #[ORM\Id]

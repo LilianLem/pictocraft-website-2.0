@@ -6,14 +6,18 @@ use App\Repository\External\Geo\France\RegionRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RegionRepository::class)]
 #[ORM\Table(name: 'geo_france_region')]
+#[UniqueEntity("inseeCode", message: "Ce code INSEE est déjà utilisé")]
+#[UniqueEntity("name", message: "Cette région est déjà renseignée")]
+#[UniqueEntity("isoCode", message: "Ce code ISO est déjà utilisé")]
 class Region
 {
     #[ORM\Id]
-    #[ORM\Column(name: "id", options: ["unsigned" => true])]
+    #[ORM\Column(name: "id", options: ["unsigned" => true], unique: true)]
     private ?int $inseeCode = null;
 
     #[ORM\Column(length: 64, unique: true)]

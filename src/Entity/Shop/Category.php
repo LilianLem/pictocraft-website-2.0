@@ -6,10 +6,17 @@ use App\Repository\Shop\CategoryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
 #[ORM\Table(name: 'shop_category')]
+#[ORM\UniqueConstraint("category_unique", columns: ["name", "parent_id"])]
+#[UniqueEntity(
+    fields: ["name", "parent"],
+    errorPath: "name",
+    message: "Cette catégorie existe déjà. Si tu souhaites donner un même nom à des sous-catégories de catégories différentes, il faut d'abord créer la catégorie principale, puis la sélectionner lors de la création de la sous-catégorie",
+)]
 class Category
 {
     #[ORM\Id]

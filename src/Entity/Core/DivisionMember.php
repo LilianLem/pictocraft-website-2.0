@@ -5,8 +5,16 @@ namespace App\Entity\Core;
 use App\Entity\Core\User\User;
 use App\Repository\Core\DivisionMemberRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: DivisionMemberRepository::class)]
+#[ORM\UniqueConstraint("division_user_unique", columns: ["user_id", "division_id"])]
+#[UniqueEntity(
+    fields: ["user", "division"],
+    errorPath: "division",
+    message: "Cet utilisateur fait déjà partie de cette division",
+)]
 class DivisionMember
 {
     #[ORM\Id]
@@ -16,13 +24,16 @@ class DivisionMember
 
     #[ORM\ManyToOne(inversedBy: 'roles')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotBlank]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'members')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotBlank]
     private ?Division $division = null;
 
     #[ORM\Column(type: "division_role_enum")]
+    #[Assert\NotBlank]
     private ?DivisionRoleEnum $role = null;
 
     public function getId(): ?int

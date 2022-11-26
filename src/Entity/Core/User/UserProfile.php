@@ -4,9 +4,13 @@ namespace App\Entity\Core\User;
 
 use App\Repository\Core\User\UserProfileRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserProfileRepository::class)]
+#[UniqueEntity("minecraftUuid", message: "Ce compte Minecraft est déjà relié à un utilisateur")]
+#[UniqueEntity("steamId", message: "Ce compte Steam est déjà relié à un utilisateur")]
+#[UniqueEntity("discordId", message: "Ce compte Discord est déjà relié à un utilisateur")]
 class UserProfile
 {
     #[ORM\Id]
@@ -14,22 +18,24 @@ class UserProfile
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
-    #[ORM\Column(length: 32, nullable: true)]
-    #[Assert\Length(exactly: 32)]
+    #[ORM\Column(length: 32, unique: true, nullable: true)]
+    #[Assert\Length(exactly: 32, exactMessage: "L'UUID Minecraft doit comporter {{ limit }} caractères")]
+    #[Assert\Regex('/[\da-f]+/', message: "Le format de l'UUID Minecraft est incorrect")]
     private ?string $minecraftUuid = null;
 
-    #[ORM\Column(length: 17, nullable: true)]
-    #[Assert\Length(exactly: 17)]
-    #[Assert\Regex('/\d+/')]
+    // TODO : pour une future version, permettre de relier plusieurs comptes Steam (notamment pour la vérification des jeux déjà possédés)
+    #[ORM\Column(length: 17, unique: true, nullable: true)]
+    #[Assert\Length(exactly: 17, exactMessage: "L'ID Steam doit comporter {{ limit }} caractères")]
+    #[Assert\Regex('/\d+/', message: "L'ID Steam doit être numérique")]
     private ?string $steamId = null;
 
-    #[ORM\Column(length: 32, nullable: true)]
-    #[Assert\Length(min: 17, max: 32)]
-    #[Assert\Regex('/\d+/')]
+    #[ORM\Column(length: 32, unique: true, nullable: true)]
+    #[Assert\Length(min: 17, max: 32, minMessage: "L'ID Discord doit comporter au moins {{ limit }} caractères", maxMessage: "L'ID Discord ne peut pas dépasser {{ limit }} caractères")]
+    #[Assert\Regex('/\d+/', message: "L'ID Discord doit être numérique")]
     private ?string $discordId = null;
 
     #[ORM\Column(nullable: true)]
-    #[Assert\Length(min: 4, max: 255, minMessage: "La description doit comporter au moins {{ limit }} caractères", maxMessage: "La description doit comporter au maximum {{ limit }} caractères")]
+    #[Assert\Length(min: 4, max: 255, minMessage: "La description doit comporter au moins {{ limit }} caractères", maxMessage: "La description ne peut pas dépasser {{ limit }} caractères")]
     private ?string $description = null;
 
     // TODO : à changer en relation

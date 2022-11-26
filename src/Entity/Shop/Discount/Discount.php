@@ -8,10 +8,12 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: DiscountRepository::class)]
 #[ORM\Table(name: 'shop_discount')]
+#[UniqueEntity("code", message: "Ce code est déjà utilisé")]
 class Discount
 {
     #[ORM\Id]
@@ -35,7 +37,7 @@ class Discount
     #[Assert\Length(max: 500, maxMessage: "Le texte ne doit pas dépasser {{ limit }} caractères")]
     private ?string $conditions = null;
 
-    #[ORM\Column(length: 16, nullable: true)]
+    #[ORM\Column(length: 16, nullable: true, unique: true)]
     #[Assert\Length(min: 3, max: 16, minMessage: "Le code doit faire au minimum {{ limit }} caractères", maxMessage: "Le code ne doit pas dépasser {{ limit }} caractères")]
     private ?string $code = null;
 

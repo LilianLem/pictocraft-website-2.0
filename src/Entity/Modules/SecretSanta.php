@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: SecretSantaRepository::class)]
 class SecretSanta
@@ -18,27 +19,33 @@ class SecretSanta
     private ?User $user = null;
 
     #[ORM\Column(nullable: true)]
+    #[Assert\DateTime]
     private ?DateTimeImmutable $registeredAt = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
     private ?User $giftingTo = null;
 
     #[ORM\Column(nullable: true)]
+    #[Assert\DateTime]
     private ?DateTimeImmutable $requestedAddressAt = null;
 
     #[ORM\Column(nullable: true)]
     private ?bool $addressRequestAnswer = null;
 
     #[ORM\Column(nullable: true)]
+    #[Assert\DateTime]
     private ?DateTimeImmutable $addressRequestAnswerAt = null;
 
     #[ORM\Column(nullable: true)]
+    #[Assert\DateTime]
     private ?DateTimeImmutable $sawAddressAt = null;
 
     #[ORM\Column(length: 150, nullable: true)]
+    #[Assert\Length(max: 150, maxMessage: "Le message en cadeau ne peut pas dépasser {{ limit }} caractères")]
     private ?string $giftMessage = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Assert\DateTime]
     private ?DateTimeInterface $giftMessageLastUpdatedAt = null;
 
     #[ORM\Column(nullable: true)]

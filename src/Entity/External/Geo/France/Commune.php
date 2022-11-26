@@ -6,10 +6,12 @@ use App\Repository\External\Geo\France\CommuneRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CommuneRepository::class)]
 #[ORM\Table(name: 'geo_france_commune')]
+#[UniqueEntity("inseeCode", message: "Ce code INSEE est déjà utilisé")]
 class Commune
 {
     // Code INSEE sans les lettres (2A/2B dans les codes corses ont été remplacés par 20)

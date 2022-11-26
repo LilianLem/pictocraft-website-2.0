@@ -13,6 +13,7 @@ doctrine:
             game_key_destination_enum: App\Doctrine\Type\Shop\GameKeyDestinationEnumType
             order_status_enum: App\Doctrine\Type\Shop\OrderStatusEnumType
             order_item_status_enum: App\Doctrine\Type\Shop\OrderItemStatusEnumType
+            color_enum: App\Doctrine\Type\Core\ColorEnumType
 
         mapping_types:
             enum: string

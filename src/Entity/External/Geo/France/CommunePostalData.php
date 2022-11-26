@@ -8,10 +8,17 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CommunePostalDataRepository::class)]
 #[ORM\Table(name: 'geo_france_commune_postal_data')]
+#[ORM\UniqueConstraint("postal_data_unique", columns: ["commune_id", "postal_code", "hamlet"])]
+#[UniqueEntity(
+    fields: ["commune", "postalCode", "hamlet"],
+    errorPath: "postalCode",
+    message: "Cette combinaison (commune / code postal / hameau) existe déjà",
+)]
 class CommunePostalData
 {
     #[ORM\Id]

@@ -4,10 +4,17 @@ namespace App\Entity\Modules\Survey;
 
 use App\Repository\Modules\Survey\AnswerRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AnswerRepository::class)]
 #[ORM\Table(name: 'survey_answer')]
+#[ORM\UniqueConstraint("answer_unique", columns: ["question_id", "entry_id"])]
+#[UniqueEntity(
+    fields: ["question", "entry"],
+    errorPath: "question",
+    message: "La réponse à cette question a déjà été renseignée",
+)]
 class Answer
 {
     #[ORM\Id]

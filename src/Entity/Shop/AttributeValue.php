@@ -6,10 +6,17 @@ use App\Repository\Shop\AttributeValueRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AttributeValueRepository::class)]
 #[ORM\Table(name: 'shop_attribute_value')]
+#[ORM\UniqueConstraint("attribute_value_unique", columns: ["attribute_id", "value"])]
+#[UniqueEntity(
+    fields: ["attribute", "value"],
+    errorPath: "value",
+    message: "Cette valeur existe déjà pour cet attribut",
+)]
 class AttributeValue
 {
     #[ORM\Id]

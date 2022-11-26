@@ -15,6 +15,7 @@ class UserSettings
     #[ORM\Id]
     #[ORM\OneToOne(inversedBy: 'settings', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotBlank]
     private ?User $user = null;
 
     #[ORM\Column]
@@ -31,15 +32,19 @@ class UserSettings
 
     // ------ Adresse définie par l'utilisateur comme étant celle à utiliser pour la livraison et la facturation ------ \\
     #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
     private ?string $addressLineBuildingInside = null;
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
     private ?string $addressLineBuildingOutside = null;
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
     private ?string $addressLineStreet = null;
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
     private ?string $addressLineHamlet = null;
 
     #[ORM\ManyToOne(inversedBy: 'usersWithAddressHere')]
@@ -52,15 +57,19 @@ class UserSettings
     // ------ Adresse définie par l'utilisateur comme étant celle à utiliser pour la livraison et la facturation ------ \\
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
     private ?string $ss_addressLineBuildingInside = null;
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
     private ?string $ss_addressLineBuildingOutside = null;
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
     private ?string $ss_addressLineStreet = null;
 
     #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
     private ?string $ss_addressLineHamlet = null;
 
     #[ORM\ManyToOne(inversedBy: 'ss_usersWithAddressHere')]
@@ -71,7 +80,7 @@ class UserSettings
 
     // TODO : implémenter la lib https://github.com/odolbeau/phone-number-bundle
     #[ORM\Column(length: 16, nullable: true)]
-    #[Assert\Length(max: 16, maxMessage: "Le numéro de téléphone ne doit pas dépasser 16 chiffres")]
+    #[Assert\Length(max: 16, maxMessage: "Le numéro de téléphone ne doit pas dépasser {{ limit }} chiffres")]
     #[Assert\Regex('/\+?\d{1,15}/', message: "Le numéro de téléphone est invalide")]
     private ?string $phoneNumber = null;
 

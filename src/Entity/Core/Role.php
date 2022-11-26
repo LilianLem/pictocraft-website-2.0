@@ -6,10 +6,13 @@ use App\Repository\Core\RoleRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 // TODO : vérifier si la classe est fonctionnelle en remplacement du rôle d'origine de Symfony
 #[ORM\Entity(repositoryClass: RoleRepository::class)]
+#[UniqueEntity("name", message: "Ce rôle existe déjà")]
+#[UniqueEntity("internalName", message: "Ce nom interne est déjà utilisé")]
 class Role
 {
     #[ORM\Id]
@@ -17,21 +20,23 @@ class Role
     #[ORM\Column(options: ["unsigned" => true])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 32)]
+    #[ORM\Column(length: 32, unique: true)]
     #[Assert\Length(max: 32, maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $name = null;
 
-    #[ORM\Column(length: 32)]
+    #[ORM\Column(length: 32, unique: true)]
     #[Assert\Length(min: 6, max: 32, minMessage: "Le nom interne doit comporter au moins {{ limit }} caractères", maxMessage: "Le nom interne ne doit pas dépasser {{ limit }} caractères")]
-    #[Assert\Regex('/^ROLE_[A-Z]+$/', message: "Le nom interne doit respecter le format ROLE_XXXX (exemple : ROLE_MY_RANK)")]
+    #[Assert\Regex('/^ROLE(_[A-Z]+)+$/', message: "Le nom interne doit respecter le format ROLE_XXXX (exemple : ROLE_MY_RANK)")]
     #[Assert\NotBlank]
     private ?string $internalName = null;
 
     #[ORM\Column(options: ["default" => false])]
+    #[Assert\NotBlank]
     private ?bool $visible = null;
 
     #[ORM\Column(length: 6, nullable: true)]
+    #[Assert\Length(max: 6, maxMessage: "Le nom de la couleur ne doit pas dépasser {{ limit }} caractères")]
     private ?string $color = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'childrenRoles')]
