@@ -5,7 +5,7 @@ namespace App\Entity\Shop\Order;
 use App\Entity\Core\User\User;
 use App\Entity\Shop\Discount\AppliedDiscount;
 use App\Entity\Shop\OrderItem\OrderItem;
-use App\Entity\Shop\PaymentMethod;
+use App\Entity\Shop\PaymentMethod\PaymentMethod;
 use App\Entity\Shop\WalletTransaction;
 use App\Repository\Shop\Order\OrderRepository;
 use DateTimeImmutable;
@@ -78,7 +78,7 @@ class Order
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: AppliedDiscount::class)]
     private Collection $appliedDiscounts;
 
-    #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderStatus::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: Status::class, orphanRemoval: true)]
     private Collection $statusHistory;
 
     public function __construct()
@@ -284,7 +284,7 @@ class Order
     }
 
     /**
-     * @return Collection<int, OrderStatus>
+     * @return Collection<int, Status>
      */
     public function getStatusHistory(): Collection
     {
@@ -292,7 +292,7 @@ class Order
     }
 
     // TODO : méthode à retravailler pour juste donner le statut à ajouter
-    public function addStatusToHistory(OrderStatus $statusHistory): self
+    public function addStatusToHistory(Status $statusHistory): self
     {
         if (!$this->statusHistory->contains($statusHistory)) {
             $this->statusHistory->add($statusHistory);
@@ -302,7 +302,7 @@ class Order
         return $this;
     }
 
-    public function removeStatusFromHistory(OrderStatus $statusHistory): self
+    public function removeStatusFromHistory(Status $statusHistory): self
     {
         if ($this->statusHistory->removeElement($statusHistory)) {
             // set the owning side to null (unless already changed)

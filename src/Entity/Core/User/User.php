@@ -3,17 +3,17 @@
 namespace App\Entity\Core\User;
 
 use App\Entity\Core\Badge\BadgeUser;
-use App\Entity\Core\DivisionMember;
+use App\Entity\Core\Division\DivisionMember;
 use App\Entity\Core\GenderEnum;
 use App\Entity\Core\Notification\NotificationUser;
-use App\Entity\Core\Role;
-use App\Entity\Core\RoleUser;
+use App\Entity\Core\Role\Role;
+use App\Entity\Core\Role\RoleUser;
 use App\Entity\Modules\SecretSanta;
 use App\Entity\Modules\Survey\Entry;
 use App\Entity\Modules\Survey\Survey;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\OrderItem\OrderItem;
-use App\Entity\Shop\RedemptionCode;
+use App\Entity\Shop\RedemptionCode\RedemptionCode;
 use App\Entity\Shop\WalletTransaction;
 use App\Repository\Core\User\UserRepository;
 use DateTimeImmutable;
@@ -108,13 +108,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?bool $enabled = null;
 
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
-    private ?UserProfile $profile = null;
+    private ?Profile $profile = null;
 
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
-    private ?UserSettings $settings = null;
+    private ?Settings $settings = null;
 
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
-    private ?UserStats $stats = null;
+    private ?Stats $stats = null;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Order::class)]
     private Collection $orders;
@@ -149,7 +149,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $walletTransactions;
 
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
-    private ?UserConsents $userConsents = null;
+    private ?Consents $userConsents = null;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: NotificationUser::class, orphanRemoval: true)]
     private Collection $notifications;
@@ -445,12 +445,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getProfile(): ?UserProfile
+    public function getProfile(): ?Profile
     {
         return $this->profile;
     }
 
-    public function setProfile(UserProfile $profile): self
+    public function setProfile(Profile $profile): self
     {
         // set the owning side of the relation if necessary
         if ($profile->getUser() !== $this) {
@@ -462,12 +462,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getSettings(): ?UserSettings
+    public function getSettings(): ?Settings
     {
         return $this->settings;
     }
 
-    public function setSettings(UserSettings $settings): self
+    public function setSettings(Settings $settings): self
     {
         // set the owning side of the relation if necessary
         if ($settings->getUser() !== $this) {
@@ -479,12 +479,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getStats(): ?UserStats
+    public function getStats(): ?Stats
     {
         return $this->stats;
     }
 
-    public function setStats(UserStats $stats): self
+    public function setStats(Stats $stats): self
     {
         // set the owning side of the relation if necessary
         if ($stats->getUser() !== $this) {
@@ -727,12 +727,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getUserConsents(): ?UserConsents
+    public function getUserConsents(): ?Consents
     {
         return $this->userConsents;
     }
 
-    public function setUserConsents(UserConsents $userConsents): self
+    public function setUserConsents(Consents $userConsents): self
     {
         // set the owning side of the relation if necessary
         if ($userConsents->getUser() !== $this) {

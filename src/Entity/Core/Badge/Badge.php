@@ -33,7 +33,7 @@ class Badge
     private ?string $image = null;
 
     #[ORM\ManyToOne(inversedBy: 'badges')]
-    private ?BadgeCategory $category = null;
+    private ?Category $category = null;
 
     #[ORM\OneToMany(mappedBy: 'badge', targetEntity: BadgeUser::class, orphanRemoval: true)]
     private Collection $users;
@@ -84,12 +84,12 @@ class Badge
         return $this;
     }
 
-    public function getCategory(): ?BadgeCategory
+    public function getCategory(): ?Category
     {
         return $this->category;
     }
 
-    public function setCategory(?BadgeCategory $category): self
+    public function setCategory(?Category $category): self
     {
         $this->category = $category;
 

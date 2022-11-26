@@ -62,7 +62,7 @@ class Discount
     #[ORM\Column(nullable: true)]
     private ?int $priority = null;
 
-    #[ORM\OneToMany(mappedBy: 'discount', targetEntity: DiscountConstraintGroup::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'discount', targetEntity: ConstraintGroup::class, orphanRemoval: true)]
     private Collection $constraintGroups;
 
     #[ORM\OneToMany(mappedBy: 'discount', targetEntity: AppliedDiscount::class)]
@@ -200,14 +200,14 @@ class Discount
     }
 
     /**
-     * @return Collection<int, DiscountConstraintGroup>
+     * @return Collection<int, ConstraintGroup>
      */
     public function getConstraintGroups(): Collection
     {
         return $this->constraintGroups;
     }
 
-    public function addConstraintGroup(DiscountConstraintGroup $constraintGroup): self
+    public function addConstraintGroup(ConstraintGroup $constraintGroup): self
     {
         if (!$this->constraintGroups->contains($constraintGroup)) {
             $this->constraintGroups->add($constraintGroup);
@@ -217,7 +217,7 @@ class Discount
         return $this;
     }
 
-    public function removeConstraintGroup(DiscountConstraintGroup $constraintGroup): self
+    public function removeConstraintGroup(ConstraintGroup $constraintGroup): self
     {
         if ($this->constraintGroups->removeElement($constraintGroup)) {
             // set the owning side to null (unless already changed)

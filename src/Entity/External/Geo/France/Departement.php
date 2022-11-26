@@ -2,7 +2,7 @@
 
 namespace App\Entity\External\Geo\France;
 
-use App\Entity\Core\User\UserSettings;
+use App\Entity\Core\User\Settings;
 use App\Repository\External\Geo\France\DepartementRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -41,7 +41,7 @@ class Departement
     #[ORM\OneToMany(mappedBy: 'departement', targetEntity: Commune::class, orphanRemoval: true)]
     private Collection $communes;
 
-    #[ORM\OneToMany(mappedBy: 'departement', targetEntity: UserSettings::class)]
+    #[ORM\OneToMany(mappedBy: 'departement', targetEntity: Settings::class)]
     private Collection $usersLivingHere;
 
     public function __construct()
@@ -132,14 +132,14 @@ class Departement
     }
 
     /**
-     * @return Collection<int, UserSettings>
+     * @return Collection<int, Settings>
      */
     public function getUsersLivingHere(): Collection
     {
         return $this->usersLivingHere;
     }
 
-    public function addUserLivingHere(UserSettings $user): self
+    public function addUserLivingHere(Settings $user): self
     {
         if (!$this->usersLivingHere->contains($user)) {
             $this->usersLivingHere->add($user);
@@ -149,7 +149,7 @@ class Departement
         return $this;
     }
 
-    public function removeUserLivingHere(UserSettings $user): self
+    public function removeUserLivingHere(Settings $user): self
     {
         if ($this->usersLivingHere->removeElement($user)) {
             // set the owning side to null (unless already changed)

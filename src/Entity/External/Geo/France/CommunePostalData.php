@@ -2,7 +2,7 @@
 
 namespace App\Entity\External\Geo\France;
 
-use App\Entity\Core\User\UserSettings;
+use App\Entity\Core\User\Settings;
 use App\Repository\External\Geo\France\CommunePostalDataRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -51,10 +51,10 @@ class CommunePostalData
     #[Assert\Range(min: -180, max: 180, minMessage: "La longitude doit être supérieure ou égale à {{ limit }}°", maxMessage: "La longitude doit être inférieure ou égale à {{ limit }}°")]
     private ?string $longitude = null;
 
-    #[ORM\OneToMany(mappedBy: 'addressCommunePostalData', targetEntity: UserSettings::class)]
+    #[ORM\OneToMany(mappedBy: 'addressCommunePostalData', targetEntity: Settings::class)]
     private Collection $usersWithAddressHere;
 
-    #[ORM\OneToMany(mappedBy: 'ss_addressCommunePostalData', targetEntity: UserSettings::class)]
+    #[ORM\OneToMany(mappedBy: 'ss_addressCommunePostalData', targetEntity: Settings::class)]
     private Collection $ss_usersWithAddressHere;
 
     public function __construct()
@@ -129,14 +129,14 @@ class CommunePostalData
     }
 
     /**
-     * @return Collection<int, UserSettings>
+     * @return Collection<int, Settings>
      */
     public function getUsersWithAddressHere(): Collection
     {
         return $this->usersWithAddressHere;
     }
 
-    public function addUserWithAddressHere(UserSettings $user): self
+    public function addUserWithAddressHere(Settings $user): self
     {
         if (!$this->usersWithAddressHere->contains($user)) {
             $this->usersWithAddressHere->add($user);
@@ -146,7 +146,7 @@ class CommunePostalData
         return $this;
     }
 
-    public function removeUserWithAddressHere(UserSettings $user): self
+    public function removeUserWithAddressHere(Settings $user): self
     {
         if ($this->usersWithAddressHere->removeElement($user)) {
             // set the owning side to null (unless already changed)
@@ -159,14 +159,14 @@ class CommunePostalData
     }
 
     /**
-     * @return Collection<int, UserSettings>
+     * @return Collection<int, Settings>
      */
     public function getSsUsersWithAddressHere(): Collection
     {
         return $this->ss_usersWithAddressHere;
     }
 
-    public function addSsUserWithAddressHere(UserSettings $user): self
+    public function addSsUserWithAddressHere(Settings $user): self
     {
         if (!$this->ss_usersWithAddressHere->contains($user)) {
             $this->ss_usersWithAddressHere->add($user);
@@ -176,7 +176,7 @@ class CommunePostalData
         return $this;
     }
 
-    public function removeSsUserWithAddressHere(UserSettings $user): self
+    public function removeSsUserWithAddressHere(Settings $user): self
     {
         if ($this->ss_usersWithAddressHere->removeElement($user)) {
             // set the owning side to null (unless already changed)

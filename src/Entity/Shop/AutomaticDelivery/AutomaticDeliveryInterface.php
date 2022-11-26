@@ -6,5 +6,5 @@ use App\Entity\Core\User\User;
 
 interface AutomaticDeliveryInterface
 {
-    public static function activateProduct(User $user): AutomaticDeliveryReturnType;
+    public static function activateProduct(User $user): ReturnType;
 }

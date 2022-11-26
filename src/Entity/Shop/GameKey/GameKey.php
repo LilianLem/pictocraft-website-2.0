@@ -3,7 +3,7 @@
 namespace App\Entity\Shop\GameKey;
 
 use App\Entity\Shop\OrderItem\OrderItem;
-use App\Entity\Shop\RedemptionCode;
+use App\Entity\Shop\RedemptionCode\RedemptionCode;
 use App\Repository\Shop\GameKey\GameKeyRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
@@ -33,7 +33,7 @@ class GameKey
 
     #[ORM\Column(type: "game_key_type_enum")]
     #[Assert\NotBlank]
-    private ?GameKeyTypeEnum $keyType = null;
+    private ?TypeEnum $keyType = null;
 
     #[ORM\Column(length: 32, nullable: true)]
     #[Assert\Length(max: 32, maxMessage: "Les genres ne doivent pas dépasser {{ limit }} caractères")]
@@ -65,7 +65,7 @@ class GameKey
 
     #[ORM\Column(type: "game_key_destination_enum")]
     #[Assert\NotBlank]
-    private ?GameKeyDestinationEnum $destination = null;
+    private ?DestinationEnum $destination = null;
 
     #[ORM\OneToOne(inversedBy: 'gameKey', cascade: ['persist', 'remove'])]
     private ?RedemptionCode $redeemedCode = null;
@@ -104,12 +104,12 @@ class GameKey
         return $this;
     }
 
-    public function getKeyType(): ?GameKeyTypeEnum
+    public function getKeyType(): ?TypeEnum
     {
         return $this->keyType;
     }
 
-    public function setKeyType(GameKeyTypeEnum $keyType): self
+    public function setKeyType(TypeEnum $keyType): self
     {
         $this->keyType = $keyType;
 
@@ -200,12 +200,12 @@ class GameKey
         return $this;
     }
 
-    public function getDestination(): ?GameKeyDestinationEnum
+    public function getDestination(): ?DestinationEnum
     {
         return $this->destination;
     }
 
-    public function setDestination(GameKeyDestinationEnum $destination): self
+    public function setDestination(DestinationEnum $destination): self
     {
         $this->destination = $destination;
 

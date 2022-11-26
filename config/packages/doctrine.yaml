@@ -4,15 +4,15 @@ doctrine:
 
         types:
             gender_enum: App\Doctrine\Type\Core\GenderEnumType
-            division_role_enum: App\Doctrine\Type\Core\DivisionRoleEnumType
+            division_role_enum: App\Doctrine\Type\Core\Division\RoleEnumType
             question_field_type_enum: App\Doctrine\Type\Modules\Survey\QuestionFieldTypeEnumType
-            payment_method_type_enum: App\Doctrine\Type\Shop\PaymentMethodTypeEnumType
-            delivery_type_enum: App\Doctrine\Type\Shop\DeliveryTypeEnumType
-            discount_applies_on_enum: App\Doctrine\Type\Shop\DiscountAppliesOnEnumType
-            game_key_type_enum: App\Doctrine\Type\Shop\GameKeyTypeEnumType
-            game_key_destination_enum: App\Doctrine\Type\Shop\GameKeyDestinationEnumType
-            order_status_enum: App\Doctrine\Type\Shop\OrderStatusEnumType
-            order_item_status_enum: App\Doctrine\Type\Shop\OrderItemStatusEnumType
+            payment_method_type_enum: App\Doctrine\Type\Shop\PaymentMethod\TypeEnumType
+            delivery_type_enum: App\Doctrine\Type\Shop\Delivery\TypeEnumType
+            discount_applies_on_enum: App\Doctrine\Type\Shop\Discount\DiscountAppliesOnEnumType
+            game_key_type_enum: App\Doctrine\Type\Shop\GameKey\TypeEnumType
+            game_key_destination_enum: App\Doctrine\Type\Shop\GameKey\DestinationEnumType
+            order_status_enum: App\Doctrine\Type\Shop\Order\StatusEnumType
+            order_item_status_enum: App\Doctrine\Type\Shop\OrderItem\StatusEnumType
             color_enum: App\Doctrine\Type\Core\ColorEnumType
 
         mapping_types:

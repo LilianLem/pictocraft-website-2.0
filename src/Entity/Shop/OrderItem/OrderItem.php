@@ -3,7 +3,7 @@
 namespace App\Entity\Shop\OrderItem;
 
 use App\Entity\Core\User\User;
-use App\Entity\Shop\Delivery;
+use App\Entity\Shop\Delivery\Delivery;
 use App\Entity\Shop\Discount\AppliedDiscount;
 use App\Entity\Shop\GameKey\GameKey;
 use App\Entity\Shop\Order\Order;
@@ -93,7 +93,7 @@ class OrderItem
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $deliveryTrackingLink = null;
 
-    #[ORM\OneToMany(mappedBy: 'orderItem', targetEntity: OrderItemStatus::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'orderItem', targetEntity: Status::class, orphanRemoval: true)]
     private Collection $statusHistory;
 
     // Indique l'article qui a servi à renouveler cet article
@@ -321,7 +321,7 @@ class OrderItem
     }
 
     /**
-     * @return Collection<int, OrderItemStatus>
+     * @return Collection<int, Status>
      */
     public function getStatusHistory(): Collection
     {
@@ -329,7 +329,7 @@ class OrderItem
     }
 
     // TODO : méthode à retravailler pour juste donner le statut à ajouter
-    public function addStatusToHistory(OrderItemStatus $statusHistory): self
+    public function addStatusToHistory(Status $statusHistory): self
     {
         if (!$this->statusHistory->contains($statusHistory)) {
             $this->statusHistory->add($statusHistory);
@@ -339,7 +339,7 @@ class OrderItem
         return $this;
     }
 
-    public function removeStatusFromHistory(OrderItemStatus $statusHistory): self
+    public function removeStatusFromHistory(Status $statusHistory): self
     {
         if ($this->statusHistory->removeElement($statusHistory)) {
             // set the owning side to null (unless already changed)

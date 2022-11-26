@@ -2,6 +2,8 @@
 
 namespace App\Entity\Shop;
 
+use App\Entity\Shop\Attribute\Value;
+use App\Entity\Shop\Delivery\Delivery;
 use App\Entity\Shop\OrderItem\OrderItem;
 use App\Repository\Shop\ProductRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -93,7 +95,8 @@ class Product
     #[ORM\OneToMany(mappedBy: 'product', targetEntity: ProductCategory::class, orphanRemoval: true)]
     private Collection $productCategories;
 
-    #[ORM\ManyToMany(targetEntity: AttributeValue::class, inversedBy: 'products')]
+    #[ORM\ManyToMany(targetEntity: Value::class, inversedBy: 'products')]
+    #[ORM\JoinTable(name: "shop_product_attribute_value")]
     private Collection $attributes;
 
     #[ORM\OneToMany(mappedBy: 'item', targetEntity: OrderItem::class, orphanRemoval: true)]
@@ -326,14 +329,14 @@ class Product
     }
 
     /**
-     * @return Collection<int, AttributeValue>
+     * @return Collection<int, Value>
      */
     public function getAttributes(): Collection
     {
         return $this->attributes;
     }
 
-    public function addAttribute(AttributeValue $attribute): self
+    public function addAttribute(Value $attribute): self
     {
         if (!$this->attributes->contains($attribute)) {
             $this->attributes->add($attribute);
@@ -342,7 +345,7 @@ class Product
         return $this;
     }
 
-    public function removeAttribute(AttributeValue $attribute): self
+    public function removeAttribute(Value $attribute): self
     {
         $this->attributes->removeElement($attribute);
 

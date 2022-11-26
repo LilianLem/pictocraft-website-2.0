@@ -2,7 +2,7 @@
 
 namespace App\Entity\External\Geo;
 
-use App\Entity\Core\User\UserSettings;
+use App\Entity\Core\User\Settings;
 use App\Repository\External\Geo\CountryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -51,13 +51,13 @@ class Country
     #[Assert\Length(max: 3, maxMessage: "L'article ne doit pas dépasser {{ limit }} caractères")]
     private ?string $article = null;
 
-    #[ORM\OneToMany(mappedBy: 'country', targetEntity: UserSettings::class)]
+    #[ORM\OneToMany(mappedBy: 'country', targetEntity: Settings::class)]
     private Collection $usersLivingHere;
 
-    #[ORM\OneToMany(mappedBy: 'addressCountry', targetEntity: UserSettings::class)]
+    #[ORM\OneToMany(mappedBy: 'addressCountry', targetEntity: Settings::class)]
     private Collection $usersWithAddressHere;
 
-    #[ORM\OneToMany(mappedBy: 'ss_addressCountry', targetEntity: UserSettings::class)]
+    #[ORM\OneToMany(mappedBy: 'ss_addressCountry', targetEntity: Settings::class)]
     private Collection $ss_usersWithAddressHere;
 
     public function __construct()
@@ -133,14 +133,14 @@ class Country
     }
 
     /**
-     * @return Collection<int, UserSettings>
+     * @return Collection<int, Settings>
      */
     public function getUsersLivingHere(): Collection
     {
         return $this->usersLivingHere;
     }
 
-    public function addUserLivingHere(UserSettings $user): self
+    public function addUserLivingHere(Settings $user): self
     {
         if (!$this->usersLivingHere->contains($user)) {
             $this->usersLivingHere->add($user);
@@ -150,7 +150,7 @@ class Country
         return $this;
     }
 
-    public function removeUserLivingHere(UserSettings $user): self
+    public function removeUserLivingHere(Settings $user): self
     {
         if ($this->usersLivingHere->removeElement($user)) {
             // set the owning side to null (unless already changed)
@@ -163,14 +163,14 @@ class Country
     }
 
     /**
-     * @return Collection<int, UserSettings>
+     * @return Collection<int, Settings>
      */
     public function getUsersWithAddressHere(): Collection
     {
         return $this->usersWithAddressHere;
     }
 
-    public function addUserWithAddressHere(UserSettings $user): self
+    public function addUserWithAddressHere(Settings $user): self
     {
         if (!$this->usersWithAddressHere->contains($user)) {
             $this->usersWithAddressHere->add($user);
@@ -180,7 +180,7 @@ class Country
         return $this;
     }
 
-    public function removeUserWithAddressHere(UserSettings $user): self
+    public function removeUserWithAddressHere(Settings $user): self
     {
         if ($this->usersWithAddressHere->removeElement($user)) {
             // set the owning side to null (unless already changed)
@@ -193,14 +193,14 @@ class Country
     }
 
     /**
-     * @return Collection<int, UserSettings>
+     * @return Collection<int, Settings>
      */
     public function getSsUsersWithAddressHere(): Collection
     {
         return $this->ss_usersWithAddressHere;
     }
 
-    public function addSsUserWithAddressHere(UserSettings $user): self
+    public function addSsUserWithAddressHere(Settings $user): self
     {
         if (!$this->ss_usersWithAddressHere->contains($user)) {
             $this->ss_usersWithAddressHere->add($user);
@@ -210,7 +210,7 @@ class Country
         return $this;
     }
 
-    public function removeSsUserWithAddressHere(UserSettings $user): self
+    public function removeSsUserWithAddressHere(Settings $user): self
     {
         if ($this->ss_usersWithAddressHere->removeElement($user)) {
             // set the owning side to null (unless already changed)

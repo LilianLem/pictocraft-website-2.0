@@ -2,7 +2,7 @@
 
 namespace App\Entity\Modules\Survey;
 
-use App\Entity\Core\Role;
+use App\Entity\Core\Role\Role;
 use App\Entity\Core\User\User;
 use App\Repository\Modules\Survey\ConstraintRepository;
 use Doctrine\ORM\Mapping as ORM;
