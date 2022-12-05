@@ -1,28 +1,50 @@
 <?php
 
-namespace App\Entity\Modules;
+namespace App\Entity\Modules\SecretSanta;
 
 use App\Entity\Core\User\User;
-use App\Repository\Modules\SecretSantaRepository;
+use App\Repository\Modules\SecretSanta\ParticipantRepository;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: SecretSantaRepository::class)]
-class SecretSanta
+#[ORM\Entity(repositoryClass: ParticipantRepository::class)]
+#[ORM\Table(name: 'secret_santa_participant')]
+#[ORM\UniqueConstraint("secret_santa_participant_unique", columns: ["user_id", "edition_id"])]
+#[ORM\UniqueConstraint("secret_santa_gifting_to_unique", columns: ["gifting_to_id", "edition_id"])]
+#[UniqueEntity(
+    fields: ["user", "edition"],
+    errorPath: "user",
+    message: "Cet utilisateur est déjà inscrit à cette édition",
+)]
+#[UniqueEntity(
+    fields: ["giftingTo", "edition"],
+    errorPath: "giftingTo",
+    message: "Un père Noël secret a déjà été assigné à cet utilisateur pour cette édition",
+)]
+class Participant
 {
     #[ORM\Id]
-    #[ORM\OneToOne(inversedBy: 'secretSantaData', cascade: ['persist', 'remove'])]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(options: ["unsigned" => true])]
+    private ?int $id = null;
+
+    #[ORM\ManyToOne(inversedBy: 'secretSantaParticipations')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
+
+    #[ORM\ManyToOne(inversedBy: 'participants')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Edition $edition = null;
 
     #[ORM\Column(nullable: true)]
     #[Assert\DateTime]
     private ?DateTimeImmutable $registeredAt = null;
 
-    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne]
     private ?User $giftingTo = null;
 
     #[ORM\Column(nullable: true)]
@@ -52,14 +74,22 @@ class SecretSanta
     private ?bool $sentPickupLocation = null;
 
     #[ORM\Column(nullable: true)]
-    private ?bool $informedDelivery = null;
+    private ?bool $informedDeliveryAtPickupLocation = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?bool $informedHomeDeliveryShipment = null;
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
     public function getUser(): ?User
     {
         return $this->user;
     }
 
-    public function setUser(User $user): self
+    public function setUser(?User $user): self
     {
         $this->user = $user;
 
@@ -174,14 +204,38 @@ class SecretSanta
         return $this;
     }
 
-    public function isInformedDelivery(): ?bool
+    public function isInformedDeliveryAtPickupLocation(): ?bool
     {
-        return $this->informedDelivery;
+        return $this->informedDeliveryAtPickupLocation;
     }
 
-    public function setInformedDelivery(?bool $informedDelivery): self
+    public function setInformedDeliveryAtPickupLocation(?bool $informedDeliveryAtPickupLocation): self
     {
-        $this->informedDelivery = $informedDelivery;
+        $this->informedDeliveryAtPickupLocation = $informedDeliveryAtPickupLocation;
+
+        return $this;
+    }
+
+    public function isInformedHomeDeliveryShipment(): ?bool
+    {
+        return $this->informedHomeDeliveryShipment;
+    }
+
+    public function setInformedHomeDeliveryShipment(?bool $informedHomeDeliveryShipment): self
+    {
+        $this->informedHomeDeliveryShipment = $informedHomeDeliveryShipment;
+
+        return $this;
+    }
+
+    public function getEdition(): ?Edition
+    {
+        return $this->edition;
+    }
+
+    public function setEdition(?Edition $edition): self
+    {
+        $this->edition = $edition;
 
         return $this;
     }

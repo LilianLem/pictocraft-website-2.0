@@ -11,10 +11,16 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: DivisionRepository::class)]
 #[ORM\UniqueConstraint("division_unique", columns: ["name", "parent_id"])]
+#[ORM\UniqueConstraint("division_slug_unique", columns: ["slug", "parent_id"])]
 #[UniqueEntity(
-    fields: ["name"],
+    fields: ["name", "parent"],
     errorPath: "name",
     message: "Cette division existe déjà. Si tu souhaites donner un même nom à des sous-divisions de divisions différentes, il faut d'abord créer la division principale, puis la sélectionner lors de la création de la sous-division",
+)]
+#[UniqueEntity(
+    fields: ["slug", "parent"],
+    errorPath: "slug",
+    message: "Ce slug est déjà utilisé sur une division avec le même parent",
 )]
 class Division
 {
@@ -27,6 +33,11 @@ class Division
     #[Assert\Length(min: 3, max: 64, minMessage: "Le nom doit faire au minimum {{ limit }} caractères", maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $name = null;
+
+    #[ORM\Column(length: 64)]
+    #[Assert\Length(max: 64, maxMessage: "Le slug ne doit pas dépasser {{ limit }} caractères")]
+    #[Assert\NotBlank]
+    private ?string $slug = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'subdivisions')]
     private ?self $parent = null;
@@ -56,6 +67,18 @@ class Division
     public function setName(string $name): self
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): self
+    {
+        $this->slug = $slug;
 
         return $this;
     }

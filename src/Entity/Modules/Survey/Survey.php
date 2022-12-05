@@ -9,10 +9,12 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: SurveyRepository::class)]
 #[ORM\Table(name: 'survey_survey')]
+#[UniqueEntity("slug", message: "Ce slug est déjà utilisé")]
 class Survey
 {
     #[ORM\Id]
@@ -24,6 +26,11 @@ class Survey
     #[Assert\Length(max: 255, maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $name = null;
+
+    #[ORM\Column(length: 64, unique: true)]
+    #[Assert\Length(max: 64, maxMessage: "Le slug ne doit pas dépasser {{ limit }} caractères")]
+    #[Assert\NotBlank]
+    private ?string $slug = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Assert\Length(max: 2000, maxMessage: "La description ne doit pas dépasser {{ limit }} caractères")]
@@ -64,9 +71,8 @@ class Survey
     #[ORM\OneToMany(mappedBy: 'survey', targetEntity: Constraint::class, orphanRemoval: true)]
     private Collection $constraints;
 
-    #[ORM\ManyToMany(targetEntity: User::class, inversedBy: 'surveysAnsweredAnonymously')]
-    #[ORM\JoinTable(name: "survey_survey_user")]
-    private Collection $usersHavingAnsweredAnonymously;
+    #[ORM\OneToMany(mappedBy: 'survey', targetEntity: SurveyUserAnonymous::class, orphanRemoval: true)]
+    private Collection $usersAnsweredAnonymously;
 
     public function __construct()
     {
@@ -74,8 +80,8 @@ class Survey
         $this->entries = new ArrayCollection();
         $this->userConstraints = new ArrayCollection();
         $this->roleConstraints = new ArrayCollection();
-        $this->usersHavingAnsweredAnonymously = new ArrayCollection();
         $this->constraints = new ArrayCollection();
+        $this->usersAnsweredAnonymously = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -91,6 +97,18 @@ class Survey
     public function setName(string $name): self
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): self
+    {
+        $this->slug = $slug;
 
         return $this;
     }
@@ -270,25 +288,31 @@ class Survey
     }
 
     /**
-     * @return Collection<int, User>
+     * @return Collection<int, SurveyUserAnonymous>
      */
-    public function getUsersHavingAnsweredAnonymously(): Collection
+    public function getUsersAnsweredAnonymously(): Collection
     {
-        return $this->usersHavingAnsweredAnonymously;
+        return $this->usersAnsweredAnonymously;
     }
 
-    public function addUsersHavingAnsweredAnonymously(User $usersHavingAnsweredAnonymously): self
+    public function addUserAnsweredAnonymously(SurveyUserAnonymous $anonymousEntryUser): self
     {
-        if (!$this->usersHavingAnsweredAnonymously->contains($usersHavingAnsweredAnonymously)) {
-            $this->usersHavingAnsweredAnonymously->add($usersHavingAnsweredAnonymously);
+        if (!$this->usersAnsweredAnonymously->contains($anonymousEntryUser)) {
+            $this->usersAnsweredAnonymously->add($anonymousEntryUser);
+            $anonymousEntryUser->setSurvey($this);
         }
 
         return $this;
     }
 
-    public function removeUsersHavingAnsweredAnonymously(User $usersHavingAnsweredAnonymously): self
+    public function removeUserAnsweredAnonymously(SurveyUserAnonymous $anonymousEntryUser): self
     {
-        $this->usersHavingAnsweredAnonymously->removeElement($usersHavingAnsweredAnonymously);
+        if ($this->usersAnsweredAnonymously->removeElement($anonymousEntryUser)) {
+            // set the owning side to null (unless already changed)
+            if ($anonymousEntryUser->getSurvey() === $this) {
+                $anonymousEntryUser->setSurvey(null);
+            }
+        }
 
         return $this;
     }

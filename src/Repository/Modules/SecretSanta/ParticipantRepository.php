@@ -1,27 +1,27 @@
 <?php
 
-namespace App\Repository\Modules;
+namespace App\Repository\Modules\SecretSanta;
 
-use App\Entity\Modules\SecretSanta;
+use App\Entity\Modules\SecretSanta\Participant;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<SecretSanta>
+ * @extends ServiceEntityRepository<Participant>
  *
- * @method SecretSanta|null find($id, $lockMode = null, $lockVersion = null)
- * @method SecretSanta|null findOneBy(array $criteria, array $orderBy = null)
- * @method SecretSanta[]    findAll()
- * @method SecretSanta[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Participant|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Participant|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Participant[]    findAll()
+ * @method Participant[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class SecretSantaRepository extends ServiceEntityRepository
+class ParticipantRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, SecretSanta::class);
+        parent::__construct($registry, Participant::class);
     }
 
-    public function save(SecretSanta $entity, bool $flush = false): void
+    public function save(Participant $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
 
@@ -30,7 +30,7 @@ class SecretSantaRepository extends ServiceEntityRepository
         }
     }
 
-    public function remove(SecretSanta $entity, bool $flush = false): void
+    public function remove(Participant $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
 
@@ -40,7 +40,7 @@ class SecretSantaRepository extends ServiceEntityRepository
     }
 
 //    /**
-//     * @return SecretSanta[] Returns an array of SecretSanta objects
+//     * @return Participant[] Returns an array of Participant objects
 //     */
 //    public function findByExampleField($value): array
 //    {
@@ -54,7 +54,7 @@ class SecretSantaRepository extends ServiceEntityRepository
 //        ;
 //    }
 
-//    public function findOneBySomeField($value): ?SecretSanta
+//    public function findOneBySomeField($value): ?Participant
 //    {
 //        return $this->createQueryBuilder('s')
 //            ->andWhere('s.exampleField = :val')

@@ -3,6 +3,7 @@ doctrine:
         url: '%env(resolve:DATABASE_URL)%'
 
         types:
+            access_grant_enum: App\Doctrine\Type\Core\AccessGrantEnumType
             gender_enum: App\Doctrine\Type\Core\GenderEnumType
             division_role_enum: App\Doctrine\Type\Core\Division\RoleEnumType
             question_field_type_enum: App\Doctrine\Type\Modules\Survey\QuestionFieldTypeEnumType

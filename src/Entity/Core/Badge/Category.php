@@ -12,6 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
 #[ORM\Table(name: 'badge_category')]
 #[UniqueEntity("name", message: "Cette catégorie existe déjà")]
+#[UniqueEntity("slug", message: "Ce slug est déjà utilisé")]
 class Category
 {
     #[ORM\Id]
@@ -23,6 +24,11 @@ class Category
     #[Assert\Length(max: 64, maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $name = null;
+
+    #[ORM\Column(length: 64, unique: true)]
+    #[Assert\Length(max: 64, maxMessage: "Le slug ne doit pas dépasser {{ limit }} caractères")]
+    #[Assert\NotBlank]
+    private ?string $slug = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255, maxMessage: "La description ne doit pas dépasser {{ limit }} caractères")]
@@ -49,6 +55,18 @@ class Category
     public function setName(string $name): self
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): self
+    {
+        $this->slug = $slug;
 
         return $this;
     }

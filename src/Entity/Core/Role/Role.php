@@ -12,6 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 // TODO : vérifier si la classe est fonctionnelle en remplacement du rôle d'origine de Symfony
 #[ORM\Entity(repositoryClass: RoleRepository::class)]
 #[UniqueEntity("name", message: "Ce rôle existe déjà")]
+#[UniqueEntity("slug", message: "Ce slug est déjà utilisé")]
 #[UniqueEntity("internalName", message: "Ce nom interne est déjà utilisé")]
 class Role
 {
@@ -24,6 +25,10 @@ class Role
     #[Assert\Length(max: 32, maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $name = null;
+
+    #[ORM\Column(length: 32, unique: true, nullable: true)]
+    #[Assert\Length(max: 32, maxMessage: "Le slug ne doit pas dépasser {{ limit }} caractères")]
+    private ?string $slug = null;
 
     #[ORM\Column(length: 32, unique: true)]
     #[Assert\Length(min: 6, max: 32, minMessage: "Le nom interne doit comporter au moins {{ limit }} caractères", maxMessage: "Le nom interne ne doit pas dépasser {{ limit }} caractères")]
@@ -73,6 +78,18 @@ class Role
     public function setName(string $name): self
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): self
+    {
+        $this->slug = $slug;
 
         return $this;
     }

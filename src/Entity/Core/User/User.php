@@ -2,15 +2,16 @@
 
 namespace App\Entity\Core\User;
 
+use App\Entity\Core\AccessGrantEnum;
 use App\Entity\Core\Badge\BadgeUser;
 use App\Entity\Core\Division\DivisionMember;
 use App\Entity\Core\GenderEnum;
 use App\Entity\Core\Notification\NotificationUser;
 use App\Entity\Core\Role\Role;
 use App\Entity\Core\Role\RoleUser;
-use App\Entity\Modules\SecretSanta;
+use App\Entity\Modules\SecretSanta\Participant;
+use App\Entity\Modules\Survey\SurveyUserAnonymous;
 use App\Entity\Modules\Survey\Entry;
-use App\Entity\Modules\Survey\Survey;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\OrderItem\OrderItem;
 use App\Entity\Shop\RedemptionCode\RedemptionCode;
@@ -128,21 +129,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserSteamGame::class, orphanRemoval: true)]
     private Collection $steamGames;
 
-    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
-    private ?SecretSanta $secretSantaData = null;
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Participant::class, orphanRemoval: true)]
+    private Collection $secretSantaParticipations;
 
     // ------ Ces éléments sont utilisés dans le cas où un jeune mineur souhaite devenir membre. Il doit dans ce cas avoir un lien de parenté avec un autre membre actif qui en est responsable. ------ \\
-
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'responsibleOfUsers')]
     private ?self $relativeUser = null;
 
     #[ORM\OneToMany(mappedBy: 'relativeUser', targetEntity: self::class)]
     private Collection $responsibleOfUsers;
+    // --------------------------------- \\
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Entry::class)]
     private Collection $surveyEntries;
 
-    #[ORM\ManyToMany(targetEntity: Survey::class, mappedBy: 'usersHavingAnsweredAnonymously')]
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: SurveyUserAnonymous::class, orphanRemoval: true)]
     private Collection $surveysAnsweredAnonymously;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: WalletTransaction::class, orphanRemoval: true)]
@@ -157,7 +158,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: BadgeUser::class, orphanRemoval: true)]
     private Collection $badges;
 
-    // --------------------------------- \\
+    // À remplir lorsque l'utilisateur est autorisé à accéder au serveur Discord, et donc à certaines fonctionnalités du site en étant connecté, en tant que visiteur
+    #[ORM\Column(type: "access_grant_enum", nullable: true)]
+    private $accessGrantedType = null;
+
+    // Remplir si $accessGrantedBy == "member"
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    private ?self $accessGrantedBy = null;
 
     public function __construct()
     {
@@ -170,10 +177,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->roles_disabled = new ArrayCollection();
         $this->roles = new ArrayCollection();
         $this->surveyEntries = new ArrayCollection();
-        $this->surveysAnsweredAnonymously = new ArrayCollection();
         $this->walletTransactions = new ArrayCollection();
         $this->notifications = new ArrayCollection();
         $this->badges = new ArrayCollection();
+        $this->secretSantaParticipations = new ArrayCollection();
+        $this->surveysAnsweredAnonymously = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -594,25 +602,37 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getSecretSantaData(): ?SecretSanta
+    /**
+     * @return Collection<int, Participant>
+     */
+    public function getSecretSantaParticipations(): Collection
     {
-        return $this->secretSantaData;
+        return $this->secretSantaParticipations;
     }
 
-    public function setSecretSantaData(SecretSanta $secretSantaData): self
+    public function addSecretSantaParticipation(Participant $secretSantaParticipation): self
     {
-        // set the owning side of the relation if necessary
-        if ($secretSantaData->getUser() !== $this) {
-            $secretSantaData->setUser($this);
+        if (!$this->secretSantaParticipations->contains($secretSantaParticipation)) {
+            $this->secretSantaParticipations->add($secretSantaParticipation);
+            $secretSantaParticipation->setUser($this);
         }
 
-        $this->secretSantaData = $secretSantaData;
+        return $this;
+    }
+
+    public function removeSecretSantaParticipation(Participant $secretSantaParticipation): self
+    {
+        if ($this->secretSantaParticipations->removeElement($secretSantaParticipation)) {
+            // set the owning side to null (unless already changed)
+            if ($secretSantaParticipation->getUser() === $this) {
+                $secretSantaParticipation->setUser(null);
+            }
+        }
 
         return $this;
     }
 
     // ------ Ces éléments sont utilisés dans le cas où un jeune mineur souhaite devenir membre. Il doit dans ce cas avoir un lien de parenté avec un autre membre actif qui en est responsable. ------ \\
-
     public function getRelativeUser(): ?self
     {
         return $this->relativeUser;
@@ -654,7 +674,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
-
     // --------------------------------- \\
 
     /**
@@ -690,11 +709,33 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, Survey>
+     * @return Collection<int, SurveyUserAnonymous>
      */
     public function getSurveysAnsweredAnonymously(): Collection
     {
         return $this->surveysAnsweredAnonymously;
+    }
+
+    public function addSurveyAnsweredAnonymously(SurveyUserAnonymous $anonymousSurveyEntry): self
+    {
+        if (!$this->surveysAnsweredAnonymously->contains($anonymousSurveyEntry)) {
+            $this->surveysAnsweredAnonymously->add($anonymousSurveyEntry);
+            $anonymousSurveyEntry->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSurveyAnsweredAnonymously(SurveyUserAnonymous $anonymousSurveyEntry): self
+    {
+        if ($this->surveysAnsweredAnonymously->removeElement($anonymousSurveyEntry)) {
+            // set the owning side to null (unless already changed)
+            if ($anonymousSurveyEntry->getUser() === $this) {
+                $anonymousSurveyEntry->setUser(null);
+            }
+        }
+
+        return $this;
     }
 
     /**
@@ -800,6 +841,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $badge->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getAccessGrantedType(): ?AccessGrantEnum
+    {
+        return $this->accessGrantedType;
+    }
+
+    public function setAccessGrantedType(AccessGrantEnum $accessGrantedType): self
+    {
+        $this->accessGrantedType = $accessGrantedType;
+
+        return $this;
+    }
+
+    public function getAccessGrantedBy(): ?self
+    {
+        return $this->accessGrantedBy;
+    }
+
+    public function setAccessGrantedBy(?self $accessGrantedBy): self
+    {
+        $this->accessGrantedBy = $accessGrantedBy;
 
         return $this;
     }

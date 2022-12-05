@@ -13,10 +13,16 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: ValueRepository::class)]
 #[ORM\Table(name: 'shop_attribute_value')]
 #[ORM\UniqueConstraint("attribute_value_unique", columns: ["attribute_id", "value"])]
+#[ORM\UniqueConstraint("attribute_value_slug_unique", columns: ["attribute_id", "slug"])]
 #[UniqueEntity(
     fields: ["attribute", "value"],
     errorPath: "value",
     message: "Cette valeur existe déjà pour cet attribut",
+)]
+#[UniqueEntity(
+    fields: ["attribute", "slug"],
+    errorPath: "slug",
+    message: "Ce slug est déjà utilisé pour une valeur de cet attribut",
 )]
 class Value
 {
@@ -33,6 +39,11 @@ class Value
     #[Assert\Length(max: 64, maxMessage: "La valeur ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $value = null;
+
+    #[ORM\Column(length: 64)]
+    #[Assert\Length(max: 64, maxMessage: "Le slug ne doit pas dépasser {{ limit }} caractères")]
+    #[Assert\NotBlank]
+    private ?string $slug = null;
 
     #[ORM\Column(options: ["default" => false])]
     #[Assert\NotBlank]
@@ -71,6 +82,18 @@ class Value
     public function setValue(string $value): self
     {
         $this->value = $value;
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): self
+    {
+        $this->slug = $slug;
 
         return $this;
     }

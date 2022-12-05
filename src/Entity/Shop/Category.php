@@ -12,10 +12,16 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
 #[ORM\Table(name: 'shop_category')]
 #[ORM\UniqueConstraint("category_unique", columns: ["name", "parent_id"])]
+#[ORM\UniqueConstraint("category_slug_unique", columns: ["slug", "parent_id"])]
 #[UniqueEntity(
     fields: ["name", "parent"],
     errorPath: "name",
     message: "Cette catégorie existe déjà. Si tu souhaites donner un même nom à des sous-catégories de catégories différentes, il faut d'abord créer la catégorie principale, puis la sélectionner lors de la création de la sous-catégorie",
+)]
+#[UniqueEntity(
+    fields: ["slug", "parent"],
+    errorPath: "slug",
+    message: "Ce slug est déjà utilisé sur une catégorie avec le même parent",
 )]
 class Category
 {
@@ -25,9 +31,14 @@ class Category
     private ?int $id = null;
 
     #[ORM\Column(length: 32)]
-    #[Assert\Length(min: 3, max: 64, minMessage: "Le nom doit faire au minimum {{ limit }} caractères", maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
+    #[Assert\Length(min: 3, max: 32, minMessage: "Le nom doit faire au minimum {{ limit }} caractères", maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $name = null;
+
+    #[ORM\Column(length: 32)]
+    #[Assert\Length(max: 32, maxMessage: "Le slug ne doit pas dépasser {{ limit }} caractères")]
+    #[Assert\NotBlank]
+    private ?string $slug = null;
 
     #[ORM\Column(options: ["default" => true])]
     #[Assert\NotBlank]
@@ -61,6 +72,18 @@ class Category
     public function setName(string $name): self
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): self
+    {
+        $this->slug = $slug;
 
         return $this;
     }

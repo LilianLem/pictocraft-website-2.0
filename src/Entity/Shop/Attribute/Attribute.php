@@ -12,6 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: AttributeRepository::class)]
 #[ORM\Table(name: 'shop_attribute')]
 #[UniqueEntity("name", message: "Cet attribut existe déjà")]
+#[UniqueEntity("slug", message: "Ce slug est déjà utilisé")]
 class Attribute
 {
     #[ORM\Id]
@@ -23,6 +24,11 @@ class Attribute
     #[Assert\Length(min: 3, max: 64, minMessage: "Le nom doit faire au minimum {{ limit }} caractères", maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $name = null;
+
+    #[ORM\Column(length: 64, unique: true)]
+    #[Assert\Length(max: 64, maxMessage: "Le slug ne doit pas dépasser {{ limit }} caractères")]
+    #[Assert\NotBlank]
+    private ?string $slug = null;
 
     #[ORM\Column(options: ["default" => false])]
     #[Assert\NotBlank]
@@ -49,6 +55,18 @@ class Attribute
     public function setName(string $name): self
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): self
+    {
+        $this->slug = $slug;
 
         return $this;
     }
