@@ -1,0 +1,52 @@
+{% extends "base.html.twig" %}
+
+{% block stylesheets %}
+    {{ parent() }}
+{% endblock %}
+
+{% block title %}Accueil - {{ parent() }}{% endblock %}
+
+{% block body %}
+<main>
+    <h1>Bienvenue sur PictoCraft, user {# app.user.username #} !</h1>
+
+    <p>Test police - paragraphe à supprimer | Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptatibus, voluptatum!</p>
+
+    <section id="actions">
+        <h2>Que souhaites-tu faire ?</h2>
+
+        <div id="happening-now">
+            <h3>En ce moment</h3>
+
+            <div class="grid">
+                {% for i in 1..4 %}
+                    {% include "home/_action.html.twig" %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="frequently-used">
+            <h3>Utilisés fréquemment</h3>
+
+            <div class="grid">
+                {% for i in 1..4 %}
+                    {% include "home/_action.html.twig" %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <hr>
+
+        <div id="permanent">
+            <div class="grid grid-2r">
+                {% for i in 1..8 %}
+                    {% include "home/_action.html.twig" %}
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</main>
+
+
+
+{% endblock %}
