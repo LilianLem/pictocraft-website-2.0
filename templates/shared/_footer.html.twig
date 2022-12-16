@@ -1,5 +1,11 @@
 <footer class="text-center text-white bg-opacity-75">
     <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
-        © {{ "now" | date("Y") }} PictoCraft - <a href="#">Mentions légales</a>
+        {{ before ?? "" }}
+        {% if replaceText is defined %}
+            {{ replaceText }}
+        {% else %}
+            © {{ "now" | date("Y") }} PictoCraft - <a href="#">Mentions légales</a>
+        {% endif %}
+        {{ after ?? "" }}
     </div>
 </footer>

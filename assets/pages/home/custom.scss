@@ -1,0 +1,103 @@
+@import "../../styles/breakpoints";
+
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+#actions {
+    & > section {
+        @include media-breakpoint-down(md) {
+            margin: 0 auto;
+            max-width: 500px;
+        }
+
+        &:not(:last-child) {
+            margin-bottom: 20px;
+        }
+    }
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-rows: 1fr;
+    gap: 25px 10px;
+    /*grid-template-areas: ". . . .";*/
+    margin: 1rem auto;
+
+    @include media-breakpoint-down(md) {
+        grid-template-columns: 1fr 1fr;
+        max-width: 500px;
+    }
+
+    &.grid-2r {
+        grid-template-rows: 1fr 1fr;
+    }
+
+    .action {
+        /* From https://css.glass */
+        // Inutile pour le moment car aucun arrière-plan, à voir s'il faut garder l'effet
+        background: rgba(57, 57, 57, 0.92);
+        border-radius: 16px;
+        /*box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);*/
+        box-shadow: 10px 10px 10px 0 rgba(5,5,5,0.3);
+        /*backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);*/
+        border: 2px solid rgba(57, 57, 57, 0.29);
+
+        transition: all .5s cubic-bezier(0.165, 0.84, 0.44, 1);
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-evenly;
+        gap: 5%;
+        min-height: 140px;
+        --max-size: 180px;
+        max-height: var(--max-size);
+        max-width: var(--max-size);
+        padding: min(25px, 5%);
+
+        &:hover {
+            transform: translate(4px, 4px);
+            box-shadow: unset;
+            border-top: 2px solid rgba(5, 5, 5, 0.5);
+            border-left: 2px solid rgba(5, 5, 5, 0.5);
+        }
+
+        img {
+            width: 80px;
+            max-width: 80%;
+        }
+
+        p {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 0;
+            /*margin-top: 10px;
+            margin-bottom: 0;*/
+            word-break: break-word;
+            text-transform: uppercase;
+            color: white;
+            font-weight: 400;
+            line-height: 1.25rem;
+            max-height: 80px;
+
+            //height: 100%;
+            //min-height: 60px;
+            //height: 60px;
+
+            span {
+                //min-height: 60px;
+                max-height: 100%;
+                display: -webkit-box;
+                font-family: var(--secondary-font);
+                -webkit-line-clamp: 4;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+        }
+    }
+}

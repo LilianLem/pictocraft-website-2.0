@@ -2,20 +2,26 @@
 
 {% block stylesheets %}
     {{ parent() }}
+    {{ encore_entry_link_tags("home_custom") }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {{ encore_entry_script_tags("home_custom") }}
 {% endblock %}
 
 {% block title %}Accueil - {{ parent() }}{% endblock %}
 
 {% block body %}
 <main>
-    <h1>Bienvenue sur PictoCraft, user {# app.user.username #} !</h1>
+    <h1>Bienvenue sur PictoCraft, user{# app.user.username #}&nbsp;!</h1>
 
     <p>Test police - paragraphe à supprimer | Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptatibus, voluptatum!</p>
 
     <section id="actions">
-        <h2>Que souhaites-tu faire ?</h2>
+        <h2>Que souhaites-tu faire&nbsp;?</h2>
 
-        <div id="happening-now">
+        <section id="happening-now">
             <h3>En ce moment</h3>
 
             <div class="grid">
@@ -23,9 +29,9 @@
                     {% include "home/_action.html.twig" %}
                 {% endfor %}
             </div>
-        </div>
+        </section>
 
-        <div id="frequently-used">
+        <section id="frequently-used">
             <h3>Utilisés fréquemment</h3>
 
             <div class="grid">
@@ -33,20 +39,17 @@
                     {% include "home/_action.html.twig" %}
                 {% endfor %}
             </div>
-        </div>
+        </section>
 
         <hr>
 
-        <div id="permanent">
+        <section id="permanent">
             <div class="grid grid-2r">
                 {% for i in 1..8 %}
                     {% include "home/_action.html.twig" %}
                 {% endfor %}
             </div>
-        </div>
+        </section>
     </section>
 </main>
-
-
-
 {% endblock %}
