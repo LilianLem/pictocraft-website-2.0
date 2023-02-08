@@ -34,13 +34,16 @@ abstract class EnumType extends Type
 
     public function convertToPHPValue($value, AbstractPlatform $platform)
     {
+        if(is_null($value)) return null;
+
         /** @var StringBackedEnum $enumClass */
         $enumClass = $this->getEnum();
+
         return $enumClass::from($value);
     }
 
     public function convertToDatabaseValue($enum, AbstractPlatform $platform)
     {
-        return $enum->value;
+        return is_null($enum) ? null : $enum->value;
     }
 }
