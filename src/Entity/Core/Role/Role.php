@@ -44,6 +44,11 @@ class Role
     #[Assert\Length(max: 6, maxMessage: "Le nom de la couleur ne doit pas dépasser {{ limit }} caractères")]
     private ?string $color = null;
 
+    #[ORM\Column(length: 32, unique: true, nullable: true)]
+    #[Assert\Length(min: 17, max: 32, minMessage: "L'ID Discord doit comporter au moins {{ limit }} caractères", maxMessage: "L'ID Discord ne peut pas dépasser {{ limit }} caractères")]
+    #[Assert\Regex('/\d+/', message: "L'ID Discord doit être numérique")]
+    private ?string $discordId = null;
+
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'childrenRoles')]
     #[ORM\JoinColumn(onDelete: "SET NULL")]
     private ?self $parent = null;
@@ -200,6 +205,18 @@ class Role
                 $roleUser->setRole(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getDiscordId(): ?string
+    {
+        return $this->discordId;
+    }
+
+    public function setDiscordId(?string $discordId): self
+    {
+        $this->discordId = $discordId;
 
         return $this;
     }
