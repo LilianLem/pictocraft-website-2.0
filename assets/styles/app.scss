@@ -19,10 +19,12 @@ body {
 
     main {
         padding: 20px;
+        min-height: calc(100vh - 2 * var(--common-nav-size));
     }
 
     footer {
         font-weight: 340;
+        min-height: var(--common-nav-size);
     }
 }
 
