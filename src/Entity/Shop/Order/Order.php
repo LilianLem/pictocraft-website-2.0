@@ -3,6 +3,8 @@
 namespace App\Entity\Shop\Order;
 
 use App\Entity\Core\User\User;
+use App\Entity\External\Geo\Country;
+use App\Entity\External\Geo\France\CommunePostalData;
 use App\Entity\Shop\Discount\AppliedDiscount;
 use App\Entity\Shop\OrderItem\OrderItem;
 use App\Entity\Shop\PaymentMethod\PaymentMethod;
@@ -80,6 +82,33 @@ class Order
 
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: Status::class, orphanRemoval: true)]
     private Collection $statusHistory;
+
+    // ------ Sauvegarde au moment de la commande de l'adresse définie par l'utilisateur dans ses paramètres comme étant celle à utiliser pour la facturation et pour la livraison des produits physiques le cas échéant ------ \\
+    // ------ Ces champs sont obligatoires, sauf pour les activations de code (qui créent également une commande) dans le cas où l'adresse n'est pas renseignée par l'utilisateur dans ses paramètres ------ \\
+    #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
+    private ?string $addressLineBuildingInside = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
+    private ?string $addressLineBuildingOutside = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
+    private ?string $addressLineStreet = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Length(max: 64, maxMessage: "Une ligne d'adresse ne doit pas dépasser {{ limit }} caractères")]
+    private ?string $addressLineHamlet = null;
+
+    #[ORM\ManyToOne]
+    private ?CommunePostalData $addressCommunePostalData = null;
+
+    // Pays d'habitation actuel
+    #[ORM\ManyToOne]
+    private ?Country $addressCountry = null;
+
+    // ------ Sauvegarde au moment de la commande de l'adresse définie par l'utilisateur dans ses paramètres comme étant celle à utiliser pour la facturation et pour la livraison des produits physiques le cas échéant ------ \\
 
     public function __construct()
     {
@@ -249,6 +278,78 @@ class Order
         }
 
         $this->walletTransaction = $walletTransaction;
+
+        return $this;
+    }
+
+    public function getAddressLineBuildingInside(): ?string
+    {
+        return $this->addressLineBuildingInside;
+    }
+
+    public function setAddressLineBuildingInside(?string $addressLineBuildingInside): self
+    {
+        $this->addressLineBuildingInside = $addressLineBuildingInside;
+
+        return $this;
+    }
+
+    public function getAddressLineBuildingOutside(): ?string
+    {
+        return $this->addressLineBuildingOutside;
+    }
+
+    public function setAddressLineBuildingOutside(?string $addressLineBuildingOutside): self
+    {
+        $this->addressLineBuildingOutside = $addressLineBuildingOutside;
+
+        return $this;
+    }
+
+    public function getAddressLineStreet(): ?string
+    {
+        return $this->addressLineStreet;
+    }
+
+    public function setAddressLineStreet(?string $addressLineStreet): self
+    {
+        $this->addressLineStreet = $addressLineStreet;
+
+        return $this;
+    }
+
+    public function getAddressLineHamlet(): ?string
+    {
+        return $this->addressLineHamlet;
+    }
+
+    public function setAddressLineHamlet(?string $addressLineHamlet): self
+    {
+        $this->addressLineHamlet = $addressLineHamlet;
+
+        return $this;
+    }
+
+    public function getAddressCommunePostalData(): ?CommunePostalData
+    {
+        return $this->addressCommunePostalData;
+    }
+
+    public function setAddressCommunePostalData(?CommunePostalData $addressCommunePostalData): self
+    {
+        $this->addressCommunePostalData = $addressCommunePostalData;
+
+        return $this;
+    }
+
+    public function getAddressCountry(): ?Country
+    {
+        return $this->addressCountry;
+    }
+
+    public function setAddressCountry(?Country $addressCountry): self
+    {
+        $this->addressCountry = $addressCountry;
 
         return $this;
     }
