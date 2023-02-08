@@ -49,6 +49,12 @@ class Division
     #[ORM\OneToMany(mappedBy: 'division', targetEntity: DivisionMember::class, orphanRemoval: true)]
     private Collection $members;
 
+    // Sert à trouver les rôles correspondant à la division et à ajouter/supprimer le bon rôle à un utilisateur lorsqu'il fait partie d'une division (ex. : si le préfixe est DISCORD et qu'on ajoute un utilisateur avec le rôle de division ASSISTANT, on cherche donc un rôle nommé ROLE_DISCORD_ASSISTANT dans Core\Role\Role)
+    #[ORM\Column(length: 17, unique: true, nullable: true)]
+    #[Assert\Length(max: 17, maxMessage: "Le préfixe de rôle interne ne doit pas dépasser {{ limit }} caractères")]
+    #[Assert\Regex('/^[A-Z]+$/', message: "Le préfixe de rôle interne doit être uniquement composé de majuscules non accentuées")]
+    private ?string $internalRolePrefix = null;
+
     public function __construct()
     {
         $this->subdivisions = new ArrayCollection();
@@ -130,6 +136,18 @@ class Division
                 $member->setDivision(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getInternalRolePrefix(): ?string
+    {
+        return $this->internalRolePrefix;
+    }
+
+    public function setInternalRolePrefix(?string $internalRolePrefix): self
+    {
+        $this->internalRolePrefix = $internalRolePrefix;
 
         return $this;
     }
