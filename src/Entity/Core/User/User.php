@@ -208,7 +208,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        return (string) $this->username;
     }
 
     // Méthode décrite par UserInterface, ne peut renvoyer que les rôles sous forme de tableau de string. Pour obtenir les entités, utiliser getFullRoles() qui est une méthode personnalisée
