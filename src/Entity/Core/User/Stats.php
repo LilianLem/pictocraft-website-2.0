@@ -34,7 +34,7 @@ class Stats
     #[Assert\DateTime]
     private ?DateTimeInterface $lastLoginAttemptAt = null;
 
-    #[ORM\Column(options: ["unsigned" => true])]
+    #[ORM\Column(options: ["unsigned" => true, "default" => 0])]
     #[Assert\PositiveOrZero(message: "Le nombre de tentatives de connexion ne peut pas être négatif")]
     #[Assert\NotBlank]
     private ?int $nbLoginAttempts = null;

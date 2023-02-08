@@ -72,7 +72,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\Regex("/[\w .'-]+/u")] // a-zàâçéèêëîïôûùüÿæœA-ZÀÂÇÉÈÊËÎÏÔÛÙÜŸÆŒ .'- // TODO : Vérifier si regex compatible HTML dans les formulaires (voir si attribut htmlPattern ou si changement de la regex nécessaire)
     private ?string $lastName = null;
 
-    #[ORM\Column(type: "gender_enum", options: ["default" => "M"])]
+    #[ORM\Column(type: "gender_enum")]
     #[Assert\NotBlank]
     private ?GenderEnum $gender = null;
 
