@@ -54,6 +54,7 @@ class Value
 
     public function __construct()
     {
+        $this->hidden = false;
         $this->products = new ArrayCollection();
     }
 

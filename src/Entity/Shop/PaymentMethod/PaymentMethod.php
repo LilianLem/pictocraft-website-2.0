@@ -42,6 +42,8 @@ class PaymentMethod
 
     public function __construct()
     {
+        $this->enabled = false;
+        $this->selectable = false;
         $this->orders = new ArrayCollection();
     }
 

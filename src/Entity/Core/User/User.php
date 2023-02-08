@@ -168,6 +168,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
+        $this->warnings = 0;
+        $this->secretSantaEligible = false;
+        $this->christmasGiftEligible = false;
+        $this->enabled = false;
         $this->orders = new ArrayCollection();
         $this->giftedItems = new ArrayCollection();
         $this->redemptionCodes = new ArrayCollection();

@@ -47,6 +47,11 @@ class RedemptionCode
     #[Assert\NotBlank]
     private ?bool $available = null;
 
+    public function __construct()
+    {
+        $this->available = true;
+    }
+
     public function getId(): ?int
     {
         return $this->id;

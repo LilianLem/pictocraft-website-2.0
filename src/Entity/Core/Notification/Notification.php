@@ -98,6 +98,7 @@ class Notification
 
     public function __construct()
     {
+        $this->color = ColorEnum::PRIMARY;
         $this->notificationsSent = new ArrayCollection();
     }
 

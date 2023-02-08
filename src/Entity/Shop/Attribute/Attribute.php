@@ -39,6 +39,7 @@ class Attribute
 
     public function __construct()
     {
+        $this->hidden = false;
         $this->attributeValues = new ArrayCollection();
     }
 

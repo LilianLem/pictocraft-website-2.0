@@ -106,6 +106,11 @@ class OrderItem
 
     public function __construct()
     {
+        $this->basePriceHT = 0;
+        $this->basePriceTTC = 0;
+        $this->priceHT = 0;
+        $this->priceTTC = 0;
+        $this->amount = 1;
         $this->gameKeys = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
         $this->statusHistory = new ArrayCollection();

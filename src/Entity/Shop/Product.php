@@ -113,7 +113,14 @@ class Product
 
     public function __construct()
     {
-        $this->categories = new ArrayCollection();
+        $this->buyable = false;
+        $this->hidden = false;
+        $this->enabled = false;
+        $this->amount = 0;
+        $this->basePriceHT = 0;
+        $this->basePriceTTC = 0;
+        $this->priceHT = 0;
+        $this->priceTTC = 0;
         $this->productCategories = new ArrayCollection();
         $this->attributes = new ArrayCollection();
         $this->orders = new ArrayCollection();

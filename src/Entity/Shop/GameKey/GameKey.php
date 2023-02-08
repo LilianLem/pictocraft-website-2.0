@@ -75,6 +75,11 @@ class GameKey
     #[Assert\NotBlank]
     private ?int $rarity = null;
 
+    public function __construct()
+    {
+        $this->availableToDraw = true;
+    }
+
     public function getId(): ?int
     {
         return $this->id;

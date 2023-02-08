@@ -55,6 +55,7 @@ class Role
 
     public function __construct()
     {
+        $this->visible = false;
         $this->childrenRoles = new ArrayCollection();
         $this->users = new ArrayCollection();
     }

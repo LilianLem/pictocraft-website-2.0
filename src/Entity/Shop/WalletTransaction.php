@@ -45,6 +45,11 @@ class WalletTransaction
     #[Assert\NotBlank]
     private ?DateTimeImmutable $date = null;
 
+    public function __construct()
+    {
+        $this->balance = 0;
+    }
+
     public function getId(): ?int
     {
         return $this->id;

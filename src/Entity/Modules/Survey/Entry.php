@@ -48,6 +48,7 @@ class Entry
 
     public function __construct()
     {
+        $this->modifications = 0;
         $this->answers = new ArrayCollection();
     }
 

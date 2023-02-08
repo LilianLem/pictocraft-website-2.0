@@ -59,6 +59,8 @@ class Category
 
     public function __construct()
     {
+        $this->hidden = false;
+        $this->enabled = false;
         $this->subcategories = new ArrayCollection();
         $this->categoryProducts = new ArrayCollection();
     }

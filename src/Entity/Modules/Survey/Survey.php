@@ -76,7 +76,9 @@ class Survey
 
     public function __construct()
     {
+        $this->anonymous = false;
         $this->questions = new ArrayCollection();
+        $this->editable = false;
         $this->entries = new ArrayCollection();
         $this->userConstraints = new ArrayCollection();
         $this->roleConstraints = new ArrayCollection();

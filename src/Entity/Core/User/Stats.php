@@ -43,6 +43,12 @@ class Stats
     #[Assert\NotBlank]
     private ?bool $gifted = null;
 
+    public function __construct()
+    {
+        $this->nbLoginAttempts = 0;
+        $this->gifted = false;
+    }
+
     public function getUser(): ?User
     {
         return $this->user;

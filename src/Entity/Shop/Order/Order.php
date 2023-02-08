@@ -112,6 +112,8 @@ class Order
 
     public function __construct()
     {
+        $this->priceHT = 0;
+        $this->priceTTC = 0;
         $this->items = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
         $this->statusHistory = new ArrayCollection();

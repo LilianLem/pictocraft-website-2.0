@@ -33,6 +33,11 @@ class ProductCategory
     #[Assert\NotBlank]
     private ?bool $main = null;
 
+    public function __construct()
+    {
+        $this->main = false;
+    }
+
     public function getProduct(): ?Product
     {
         return $this->product;
