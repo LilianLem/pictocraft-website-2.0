@@ -52,6 +52,8 @@ class Value
     #[ORM\ManyToMany(targetEntity: Product::class, mappedBy: 'attributes')]
     private Collection $products;
 
+    private static string $slugProperty = "value";
+
     public function __construct()
     {
         $this->hidden = false;
@@ -136,5 +138,10 @@ class Value
         }
 
         return $this;
+    }
+
+    public static function getSlugProperty(): string
+    {
+        return Value::$slugProperty;
     }
 }

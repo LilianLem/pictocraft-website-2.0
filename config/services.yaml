@@ -26,3 +26,8 @@ services:
     App\Doctrine\EventListener\EnumTypeListener:
         tags:
             - { name: doctrine.event_listener, event: postGenerateSchema }
+
+    App\Doctrine\Listener\SlugListener:
+        tags:
+            - { name: doctrine.event_listener, event: prePersist }
+            - { name: doctrine.event_listener, event: preUpdate }
