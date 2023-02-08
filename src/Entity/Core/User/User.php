@@ -219,6 +219,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @see UserInterface
      */
+    /** @return string[] */
     public function getRoles(): array
     {
         /** @var Collection<int, Role> $fullRoles */
@@ -227,7 +228,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         /** @var string[] $roles */
         /** @var Role $role */
-        $roles = $fullRoles->map(fn($role) => $role->getInternalName());
+        $roles = $fullRoles->map(fn($role) => $role->getInternalName())->getValues();
 
         // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
