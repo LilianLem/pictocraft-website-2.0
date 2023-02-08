@@ -40,6 +40,7 @@ class Division
     private ?string $slug = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'subdivisions')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
     private ?self $parent = null;
 
     #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]

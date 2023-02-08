@@ -45,6 +45,7 @@ class Role
     private ?string $color = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'childrenRoles')]
+    #[ORM\JoinColumn(onDelete: "SET NULL")]
     private ?self $parent = null;
 
     #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]

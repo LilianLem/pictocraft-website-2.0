@@ -38,6 +38,7 @@ class AppliedDiscount
     private ?Discount $discount = null;
 
     #[ORM\ManyToOne(inversedBy: 'appliedDiscounts')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
     private ?Order $order = null;
 
     #[ORM\ManyToOne(inversedBy: 'appliedDiscounts')]

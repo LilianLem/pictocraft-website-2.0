@@ -39,6 +39,7 @@ class Badge
     private ?string $image = null;
 
     #[ORM\ManyToOne(inversedBy: 'badges')]
+    #[ORM\JoinColumn(onDelete: "SET NULL")]
     private ?Category $category = null;
 
     #[ORM\OneToMany(mappedBy: 'badge', targetEntity: BadgeUser::class, orphanRemoval: true)]

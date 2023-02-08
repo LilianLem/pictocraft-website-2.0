@@ -32,7 +32,7 @@ class Value
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'attributeValues')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: "CASCADE")]
     private ?Attribute $attribute = null;
 
     #[ORM\Column(length: 64)]
