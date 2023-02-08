@@ -48,7 +48,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /*#[ORM\Column]
     private array $roles = [];*/
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: RoleUser::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: RoleUser::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $roles;
 
     /**

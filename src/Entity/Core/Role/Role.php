@@ -56,7 +56,7 @@ class Role
     #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]
     private Collection $childrenRoles;
 
-    #[ORM\OneToMany(mappedBy: 'role', targetEntity: RoleUser::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'role', targetEntity: RoleUser::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $users;
 
     public function __construct()
