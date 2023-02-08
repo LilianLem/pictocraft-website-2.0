@@ -40,7 +40,7 @@ class Category
     #[Assert\NotBlank]
     private ?string $slug = null;
 
-    #[ORM\Column(options: ["default" => true])]
+    #[ORM\Column(options: ["default" => false])]
     #[Assert\NotBlank]
     private ?bool $hidden = null;
 
