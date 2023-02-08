@@ -44,6 +44,10 @@ class Category
     #[Assert\NotBlank]
     private ?bool $hidden = null;
 
+    #[ORM\Column(options: ["default" => false])]
+    #[Assert\NotBlank]
+    private ?bool $enabled = null;
+
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'getSubcategories')]
     private ?self $parent = null;
 
@@ -96,6 +100,18 @@ class Category
     public function setHidden(bool $hidden): self
     {
         $this->hidden = $hidden;
+
+        return $this;
+    }
+
+    public function isEnabled(): ?bool
+    {
+        return $this->enabled;
+    }
+
+    public function setEnabled(bool $enabled): self
+    {
+        $this->enabled = $enabled;
 
         return $this;
     }
