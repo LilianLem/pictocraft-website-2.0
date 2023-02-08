@@ -1,7 +1,30 @@
 {% extends "base.html.twig" %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    {{ encore_entry_link_tags("home_guest") }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {{ encore_entry_script_tags("home_guest") }}
+{% endblock %}
+
 {% block title %}Accueil - {{ parent() }}{% endblock %}
 
 {% block body %}
-    <h1>Bienvenue sur PictoCraft !</h1>
+    <main>
+        <h1>Bienvenue sur PictoCraft&nbsp;!</h1>
+
+        <img src="{{ asset("img/full-logo.png") }}" alt="Logo de PictoCraft" class="img-fluid" />
+
+        <p>PictoCraft est un serveur Discord communautaire principalement axé gaming, et centré autour de jeux comme Minecraft ou League of Legends, le premier étant à l'origine de la communauté.</p>
+        <p>L'accès au serveur est possible soit par la recommandation d'un membre, soit par la validation du staff suite à une demande écrite.</p>
+        <p>Pour plus d'informations sur les activités autour de la communauté, consulte les autres rubriques du site.</p>
+
+        <a href="#" class="btn btn-lg" id="btn-join">
+            <img src="{{ asset("img/discord-white.png") }}" alt="Logo de Discord" width="24" />
+            <span>Je rejoins PictoCraft</span>
+        </a>
+    </main>
 {% endblock %}

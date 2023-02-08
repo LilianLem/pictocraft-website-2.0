@@ -11,8 +11,8 @@ class HomeController extends AbstractController
     #[Route("/", name: "home")]
     public function home(): Response
     {
-        return /*$this->getUser()
-            ?*/ $this->render("home/custom.html.twig")
-            /*: $this->render("home/guest.html.twig")*/;
+        return $this->getUser()
+            ? $this->render("home/custom.html.twig")
+            : $this->render("home/guest.html.twig");
     }
 }
