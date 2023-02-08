@@ -39,6 +39,15 @@ class CommunePostalDataRepository extends ServiceEntityRepository
         }
     }
 
+    public function getMaxId(): int
+    {
+        return $this->getEntityManager()->createQueryBuilder()
+            ->select("MAX(cpd.id)")
+            ->from("App:External\Geo\France\CommunePostalData", "cpd")
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
 //    /**
 //     * @return CommunePostalData[] Returns an array of CommunePostalData objects
 //     */
