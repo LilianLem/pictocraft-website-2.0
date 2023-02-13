@@ -6,7 +6,7 @@ use App\Entity\Core\AccessGrantEnum;
 use App\Entity\Core\Badge\BadgeUser;
 use App\Entity\Core\Division\DivisionMember;
 use App\Entity\Core\GenderEnum;
-use App\Entity\Core\Notification\NotificationUser;
+use App\Entity\Core\Notification\Notification;
 use App\Entity\Core\Role\Role;
 use App\Entity\Core\Role\RoleUser;
 use App\Entity\Modules\SecretSanta\Participant;
@@ -152,7 +152,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
     private ?Consents $userConsents = null;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: NotificationUser::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Notification::class, orphanRemoval: true)]
     private Collection $notifications;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: BadgeUser::class, orphanRemoval: true)]
@@ -791,14 +791,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, NotificationUser>
+     * @return Collection<int, Notification>
      */
     public function getNotifications(): Collection
     {
         return $this->notifications;
     }
 
-    public function addNotification(NotificationUser $notification): self
+    public function addNotification(Notification $notification): self
     {
         if (!$this->notifications->contains($notification)) {
             $this->notifications->add($notification);
@@ -808,7 +808,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function removeNotification(NotificationUser $notification): self
+    public function removeNotification(Notification $notification): self
     {
         if ($this->notifications->removeElement($notification)) {
             // set the owning side to null (unless already changed)

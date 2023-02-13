@@ -2,17 +2,13 @@
 
 namespace App\Entity\Core\Notification;
 
-use App\Entity\Core\ColorEnum;
+use App\Entity\Core\User\User;
 use App\Repository\Core\Notification\NotificationRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
-#[UniqueEntity("name", message: "Cette notification existe déjà")]
 class Notification
 {
     #[ORM\Id]
@@ -20,335 +16,135 @@ class Notification
     #[ORM\Column(options: ["unsigned" => true])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 64)]
-    #[Assert\Length(max: 64, maxMessage: "Le nom interne ne doit pas dépasser {{ limit }} caractères")]
+    #[ORM\ManyToOne(inversedBy: 'notifications')]
+    #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
-    private ?string $internalName = null;
+    private ?User $user = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Assert\Length(max: 255, maxMessage: "La description interne ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $internalDescription = null;
-
-    #[ORM\Column(length: 64, nullable: true)]
-    #[Assert\Length(max: 64, maxMessage: "Le nom de la route ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $route = null;
-
-    #[ORM\Column(type: "color_enum", options: ["default" => ColorEnum::PRIMARY])]
+    #[ORM\ManyToOne(inversedBy: 'notifications')]
+    #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
-    private ?ColorEnum $color = null;
+    private ?NotificationType $type = null;
 
-    #[ORM\Column(length: 64, nullable: true)]
-    #[Assert\Length(max: 64, maxMessage: "Le nom de l'icône ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $icon = null;
+    #[ORM\Column(nullable: true)]
+    private array $placeholdersContent = [];
+
+    #[ORM\Column(nullable: true)]
+    private array $routeParameters = [];
+
+    #[ORM\Column]
+    #[Assert\DateTime]
+    #[Assert\NotBlank]
+    private ?DateTimeImmutable $generatedAt = null;
 
     #[ORM\Column]
     #[Assert\NotBlank]
-    private ?bool $sendOnWebsite = null;
+    private ?bool $sentByEmail = null;
 
     #[ORM\Column]
     #[Assert\NotBlank]
-    private ?bool $sendByEmail = null;
+    private ?bool $sentByDiscordPrivately = null;
 
-    #[ORM\Column]
-    #[Assert\NotBlank]
-    private ?bool $sendByDiscordPrivately = null;
-
-    #[ORM\Column]
-    #[Assert\NotBlank]
-    private ?bool $sendByDiscordPublicly = null;
-
-    #[ORM\Column(length: 64, nullable: true)]
-    #[Assert\Length(max: 64, maxMessage: "Le titre sur le site ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $titleForWebsite = null;
-
-    #[ORM\Column(length: 64, nullable: true)]
-    #[Assert\Length(max: 64, maxMessage: "Le titre du mail ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $titleForEmail = null;
-
-    #[ORM\Column(length: 64, nullable: true)]
-    #[Assert\Length(max: 64, maxMessage: "Le titre du message privé Discord ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $titleForDiscordPrivately = null;
-
-    #[ORM\Column(length: 64, nullable: true)]
-    #[Assert\Length(max: 64, maxMessage: "Le titre du message Discord public ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $titleForDiscordPublicly = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Assert\Length(max: 500, maxMessage: "Le texte sur le site ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $textForWebsite = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Assert\Length(max: 2000, maxMessage: "Le texte brut du mail ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $textForEmail_raw = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Assert\Length(max: 2000, maxMessage: "Le texte HTML du mail ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $textForEmail_html = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Assert\Length(max: 1500, maxMessage: "Le texte du message privé Discord ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $textForDiscordPrivately = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Assert\Length(max: 1500, maxMessage: "Le texte du message Discord public ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $textForDiscordPublicly = null;
-
-    #[ORM\OneToMany(mappedBy: 'notification', targetEntity: NotificationUser::class, orphanRemoval: true)]
-    private Collection $notificationsSent;
-
-    public function __construct()
-    {
-        $this->color = ColorEnum::PRIMARY;
-        $this->notificationsSent = new ArrayCollection();
-    }
+    #[ORM\Column(nullable: true)]
+    private ?DateTimeImmutable $markedAsReadOnWebsiteAt = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getInternalName(): ?string
+    public function getUser(): ?User
     {
-        return $this->internalName;
+        return $this->user;
     }
 
-    public function setInternalName(string $internalName): self
+    public function setUser(?User $user): self
     {
-        $this->internalName = $internalName;
+        $this->user = $user;
 
         return $this;
     }
 
-    public function getInternalDescription(): ?string
+    public function getType(): ?NotificationType
     {
-        return $this->internalDescription;
+        return $this->type;
     }
 
-    public function setInternalDescription(?string $internalDescription): self
+    public function setType(?NotificationType $type): self
     {
-        $this->internalDescription = $internalDescription;
+        $this->type = $type;
 
         return $this;
     }
 
-    public function getRoute(): ?string
+    public function getPlaceholdersContent(): array
     {
-        return $this->route;
+        return $this->placeholdersContent;
     }
 
-    public function setRoute(?string $route): self
+    public function setPlaceholdersContent(?array $placeholdersContent): self
     {
-        $this->route = $route;
+        $this->placeholdersContent = $placeholdersContent;
 
         return $this;
     }
 
-    public function getColor(): ?ColorEnum
+    public function getRouteParameters(): array
     {
-        return $this->color;
+        return $this->routeParameters;
     }
 
-    public function setColor(ColorEnum $color): self
+    public function setRouteParameters(?array $routeParameters): self
     {
-        $this->color = $color;
+        $this->routeParameters = $routeParameters;
 
         return $this;
     }
 
-    public function getIcon(): ?string
+    public function getGeneratedAt(): ?DateTimeImmutable
     {
-        return $this->icon;
+        return $this->generatedAt;
     }
 
-    public function setIcon(?string $icon): self
+    public function setGeneratedAt(DateTimeImmutable $generatedAt): self
     {
-        $this->icon = $icon;
+        $this->generatedAt = $generatedAt;
 
         return $this;
     }
 
-    public function getSendOnWebsite(): ?bool
+    public function isSentByEmail(): ?bool
     {
-        return $this->sendOnWebsite;
+        return $this->sentByEmail;
     }
 
-    public function setSendOnWebsite(bool $sendOnWebsite): self
+    public function setSentByEmail(bool $sentByEmail): self
     {
-        $this->sendOnWebsite = $sendOnWebsite;
+        $this->sentByEmail = $sentByEmail;
 
         return $this;
     }
 
-    public function getSendByEmail(): ?bool
+    public function isSentByDiscordPrivately(): ?bool
     {
-        return $this->sendByEmail;
+        return $this->sentByDiscordPrivately;
     }
 
-    public function setSendByEmail(bool $sendByEmail): self
+    public function setSentByDiscordPrivately(bool $sentByDiscordPrivately): self
     {
-        $this->sendByEmail = $sendByEmail;
+        $this->sentByDiscordPrivately = $sentByDiscordPrivately;
 
         return $this;
     }
 
-    public function getSendByDiscordPrivately(): ?bool
+    public function getMarkedAsReadOnWebsiteAt(): ?DateTimeImmutable
     {
-        return $this->sendByDiscordPrivately;
+        return $this->markedAsReadOnWebsiteAt;
     }
 
-    public function setSendByDiscordPrivately(bool $sendByDiscordPrivately): self
+    public function setMarkedAsReadOnWebsiteAt(?DateTimeImmutable $markedAsReadOnWebsiteAt): self
     {
-        $this->sendByDiscordPrivately = $sendByDiscordPrivately;
-
-        return $this;
-    }
-
-    public function getSendByDiscordPublicly(): ?bool
-    {
-        return $this->sendByDiscordPublicly;
-    }
-
-    public function setSendByDiscordPublicly(bool $sendByDiscordPublicly): self
-    {
-        $this->sendByDiscordPublicly = $sendByDiscordPublicly;
-
-        return $this;
-    }
-
-    public function getTitleForWebsite(): ?string
-    {
-        return $this->titleForWebsite;
-    }
-
-    public function setTitleForWebsite(string $titleForWebsite): self
-    {
-        $this->titleForWebsite = $titleForWebsite;
-
-        return $this;
-    }
-
-    public function getTitleForEmail(): ?string
-    {
-        return $this->titleForEmail;
-    }
-
-    public function setTitleForEmail(?string $titleForEmail): self
-    {
-        $this->titleForEmail = $titleForEmail;
-
-        return $this;
-    }
-
-    public function getTitleForDiscordPrivately(): ?string
-    {
-        return $this->titleForDiscordPrivately;
-    }
-
-    public function setTitleForDiscordPrivately(?string $titleForDiscordPrivately): self
-    {
-        $this->titleForDiscordPrivately = $titleForDiscordPrivately;
-
-        return $this;
-    }
-
-    public function getTitleForDiscordPublicly(): ?string
-    {
-        return $this->titleForDiscordPublicly;
-    }
-
-    public function setTitleForDiscordPublicly(?string $titleForDiscordPublicly): self
-    {
-        $this->titleForDiscordPublicly = $titleForDiscordPublicly;
-
-        return $this;
-    }
-
-    public function getTextForWebsite(): ?string
-    {
-        return $this->textForWebsite;
-    }
-
-    public function setTextForWebsite(?string $textForWebsite): self
-    {
-        $this->textForWebsite = $textForWebsite;
-
-        return $this;
-    }
-
-    public function getTextForEmailRaw(): ?string
-    {
-        return $this->textForEmail_raw;
-    }
-
-    public function setTextForEmailRaw(?string $textForEmail_raw): self
-    {
-        $this->textForEmail_raw = $textForEmail_raw;
-
-        return $this;
-    }
-
-    public function getTextForEmailHtml(): ?string
-    {
-        return $this->textForEmail_html;
-    }
-
-    public function setTextForEmailHtml(?string $textForEmail_html): self
-    {
-        $this->textForEmail_html = $textForEmail_html;
-
-        return $this;
-    }
-
-    public function getTextForDiscordPrivately(): ?string
-    {
-        return $this->textForDiscordPrivately;
-    }
-
-    public function setTextForDiscordPrivately(?string $textForDiscordPrivately): self
-    {
-        $this->textForDiscordPrivately = $textForDiscordPrivately;
-
-        return $this;
-    }
-
-    public function getTextForDiscordPublicly(): ?string
-    {
-        return $this->textForDiscordPublicly;
-    }
-
-    public function setTextForDiscordPublicly(?string $textForDiscordPublicly): self
-    {
-        $this->textForDiscordPublicly = $textForDiscordPublicly;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, NotificationUser>
-     */
-    public function getNotificationsSent(): Collection
-    {
-        return $this->notificationsSent;
-    }
-
-    public function addNotificationsSent(NotificationUser $notificationsSent): self
-    {
-        if (!$this->notificationsSent->contains($notificationsSent)) {
-            $this->notificationsSent->add($notificationsSent);
-            $notificationsSent->setNotification($this);
-        }
-
-        return $this;
-    }
-
-    public function removeNotificationsSent(NotificationUser $notificationsSent): self
-    {
-        if ($this->notificationsSent->removeElement($notificationsSent)) {
-            // set the owning side to null (unless already changed)
-            if ($notificationsSent->getNotification() === $this) {
-                $notificationsSent->setNotification(null);
-            }
-        }
+        $this->markedAsReadOnWebsiteAt = $markedAsReadOnWebsiteAt;
 
         return $this;
     }
