@@ -93,13 +93,13 @@ class NotificationType
     #[Assert\Length(max: 1500, maxMessage: "Le texte du message Discord public ne doit pas dépasser {{ limit }} caractères")]
     private ?string $textForDiscordPublicly = null;
 
-    #[ORM\OneToMany(mappedBy: 'notification', targetEntity: NotificationUser::class, orphanRemoval: true)]
-    private Collection $notificationsSent;
+    #[ORM\OneToMany(mappedBy: 'type', targetEntity: Notification::class, orphanRemoval: true)]
+    private Collection $notifications;
 
     public function __construct()
     {
         $this->color = ColorEnum::PRIMARY;
-        $this->notificationsSent = new ArrayCollection();
+        $this->notifications = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -324,29 +324,29 @@ class NotificationType
     }
 
     /**
-     * @return Collection<int, NotificationUser>
+     * @return Collection<int, Notification>
      */
-    public function getNotificationsSent(): Collection
+    public function getNotifications(): Collection
     {
-        return $this->notificationsSent;
+        return $this->notifications;
     }
 
-    public function addNotificationsSent(NotificationUser $notificationsSent): self
+    public function addNotification(Notification $notification): self
     {
-        if (!$this->notificationsSent->contains($notificationsSent)) {
-            $this->notificationsSent->add($notificationsSent);
-            $notificationsSent->setNotification($this);
+        if (!$this->notifications->contains($notification)) {
+            $this->notifications->add($notification);
+            $notification->setType($this);
         }
 
         return $this;
     }
 
-    public function removeNotificationsSent(NotificationUser $notificationsSent): self
+    public function removeNotification(Notification $notification): self
     {
-        if ($this->notificationsSent->removeElement($notificationsSent)) {
+        if ($this->notifications->removeElement($notification)) {
             // set the owning side to null (unless already changed)
-            if ($notificationsSent->getNotification() === $this) {
-                $notificationsSent->setNotification(null);
+            if ($notification->getType() === $this) {
+                $notification->setType(null);
             }
         }
 

@@ -3,13 +3,13 @@
 namespace App\Entity\Core\Notification;
 
 use App\Entity\Core\User\User;
-use App\Repository\Core\Notification\NotificationUserRepository;
+use App\Repository\Core\Notification\NotificationRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: NotificationUserRepository::class)]
-class NotificationUser
+#[ORM\Entity(repositoryClass: NotificationRepository::class)]
+class Notification
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -21,10 +21,10 @@ class NotificationUser
     #[Assert\NotBlank]
     private ?User $user = null;
 
-    #[ORM\ManyToOne(inversedBy: 'notificationsSent')]
+    #[ORM\ManyToOne(inversedBy: 'notifications')]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
-    private ?NotificationType $notification = null;
+    private ?NotificationType $type = null;
 
     #[ORM\Column(nullable: true)]
     private array $placeholdersContent = [];
@@ -65,14 +65,14 @@ class NotificationUser
         return $this;
     }
 
-    public function getNotification(): ?NotificationType
+    public function getType(): ?NotificationType
     {
-        return $this->notification;
+        return $this->type;
     }
 
-    public function setNotification(?NotificationType $notification): self
+    public function setType(?NotificationType $type): self
     {
-        $this->notification = $notification;
+        $this->type = $type;
 
         return $this;
     }
