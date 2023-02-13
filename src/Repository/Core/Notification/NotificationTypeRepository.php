@@ -2,26 +2,26 @@
 
 namespace App\Repository\Core\Notification;
 
-use App\Entity\Core\Notification\Notification;
+use App\Entity\Core\Notification\NotificationType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Notification>
+ * @extends ServiceEntityRepository<NotificationType>
  *
- * @method Notification|null find($id, $lockMode = null, $lockVersion = null)
- * @method Notification|null findOneBy(array $criteria, array $orderBy = null)
- * @method Notification[]    findAll()
- * @method Notification[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method NotificationType|null find($id, $lockMode = null, $lockVersion = null)
+ * @method NotificationType|null findOneBy(array $criteria, array $orderBy = null)
+ * @method NotificationType[]    findAll()
+ * @method NotificationType[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class NotificationRepository extends ServiceEntityRepository
+class NotificationTypeRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Notification::class);
+        parent::__construct($registry, NotificationType::class);
     }
 
-    public function save(Notification $entity, bool $flush = false): void
+    public function save(NotificationType $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
 
@@ -30,7 +30,7 @@ class NotificationRepository extends ServiceEntityRepository
         }
     }
 
-    public function remove(Notification $entity, bool $flush = false): void
+    public function remove(NotificationType $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
 
@@ -40,7 +40,7 @@ class NotificationRepository extends ServiceEntityRepository
     }
 
 //    /**
-//     * @return Notification[] Returns an array of Notification objects
+//     * @return NotificationType[] Returns an array of NotificationType objects
 //     */
 //    public function findByExampleField($value): array
 //    {
@@ -54,7 +54,7 @@ class NotificationRepository extends ServiceEntityRepository
 //        ;
 //    }
 
-//    public function findOneBySomeField($value): ?Notification
+//    public function findOneBySomeField($value): ?NotificationType
 //    {
 //        return $this->createQueryBuilder('n')
 //            ->andWhere('n.exampleField = :val')

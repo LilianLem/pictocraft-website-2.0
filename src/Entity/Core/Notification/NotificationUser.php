@@ -24,7 +24,7 @@ class NotificationUser
     #[ORM\ManyToOne(inversedBy: 'notificationsSent')]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
-    private ?Notification $notification = null;
+    private ?NotificationType $notification = null;
 
     #[ORM\Column(nullable: true)]
     private array $placeholdersContent = [];
@@ -65,12 +65,12 @@ class NotificationUser
         return $this;
     }
 
-    public function getNotification(): ?Notification
+    public function getNotification(): ?NotificationType
     {
         return $this->notification;
     }
 
-    public function setNotification(?Notification $notification): self
+    public function setNotification(?NotificationType $notification): self
     {
         $this->notification = $notification;
 
