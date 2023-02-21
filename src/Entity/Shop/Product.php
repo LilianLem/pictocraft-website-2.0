@@ -67,7 +67,7 @@ class Product
     #[ORM\Column(options: ["default" => 0])]
     #[Assert\GreaterThanOrEqual(-1, message: "La quantité ne peut pas être inférieure à -1 (-1 = infini, 0 = plus de stock)")]
     #[Assert\NotBlank]
-    private ?int $amount = null;
+    private ?int $quantity = null;
 
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
     #[Assert\PositiveOrZero(message: "Le prix de base HT ne peut pas être négatif")]
@@ -105,7 +105,7 @@ class Product
     #[ORM\JoinTable(name: "shop_product_attribute_value")]
     private Collection $attributes;
 
-    #[ORM\OneToMany(mappedBy: 'item', targetEntity: OrderItem::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'item', targetEntity: OrderItem::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $orders;
 
     #[ORM\OneToOne(mappedBy: 'product', cascade: ['persist', 'remove'])]
@@ -116,7 +116,7 @@ class Product
         $this->buyable = false;
         $this->hidden = false;
         $this->enabled = false;
-        $this->amount = 0;
+        $this->quantity = 0;
         $this->basePriceHT = 0;
         $this->basePriceTTC = 0;
         $this->priceHT = 0;
@@ -239,14 +239,14 @@ class Product
         return $this;
     }
 
-    public function getAmount(): ?int
+    public function getQuantity(): ?int
     {
-        return $this->amount;
+        return $this->quantity;
     }
 
-    public function setAmount(int $amount): self
+    public function setQuantity(int $quantity): self
     {
-        $this->amount = $amount;
+        $this->quantity = $quantity;
 
         return $this;
     }

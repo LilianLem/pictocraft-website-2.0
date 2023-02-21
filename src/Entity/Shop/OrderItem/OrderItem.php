@@ -43,22 +43,22 @@ class OrderItem
     private ?Product $item = null;
 
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix de base HT ne peut pas être négatif")]
+    #[Assert\PositiveOrZero(message: "Le prix de base HT unitaire ne peut pas être négatif")]
     #[Assert\NotBlank]
     private ?int $basePriceHT = null;
 
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix de base TTC ne peut pas être négatif")]
+    #[Assert\PositiveOrZero(message: "Le prix de base TTC unitaire ne peut pas être négatif")]
     #[Assert\NotBlank]
     private ?int $basePriceTTC = null;
 
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix HT ne peut pas être négatif")]
+    #[Assert\PositiveOrZero(message: "Le prix HT unitaire ne peut pas être négatif")]
     #[Assert\NotBlank]
     private ?int $priceHT = null;
 
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix TTC ne peut pas être négatif")]
+    #[Assert\PositiveOrZero(message: "Le prix TTC unitaire ne peut pas être négatif")]
     #[Assert\NotBlank]
     private ?int $priceTTC = null;
 
@@ -79,7 +79,7 @@ class OrderItem
     #[ORM\Column(options: ["default" => 1, "unsigned" => true])]
     #[Assert\PositiveOrZero(message: "La quantité ne peut pas être négative")]
     #[Assert\NotBlank]
-    private ?int $amount = null;
+    private ?int $quantity = null;
 
     #[ORM\ManyToOne(inversedBy: 'giftedItems')]
     private ?User $giftedTo = null;
@@ -110,7 +110,7 @@ class OrderItem
         $this->basePriceTTC = 0;
         $this->priceHT = 0;
         $this->priceTTC = 0;
-        $this->amount = 1;
+        $this->quantity = 1;
         $this->gameKeys = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
         $this->statusHistory = new ArrayCollection();
@@ -229,14 +229,14 @@ class OrderItem
         return $this;
     }
 
-    public function getAmount(): ?int
+    public function getQuantity(): ?int
     {
-        return $this->amount;
+        return $this->quantity;
     }
 
-    public function setAmount(int $amount): self
+    public function setQuantity(int $quantity): self
     {
-        $this->amount = $amount;
+        $this->quantity = $quantity;
 
         return $this;
     }

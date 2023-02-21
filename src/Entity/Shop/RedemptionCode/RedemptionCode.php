@@ -6,6 +6,7 @@ use App\Entity\Core\User\User;
 use App\Entity\Shop\GameKey\GameKey;
 use App\Entity\Shop\GameKey\TypeEnum;
 use App\Repository\Shop\RedemptionCode\RedemptionCodeRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -46,6 +47,13 @@ class RedemptionCode
     #[ORM\Column(options: ["default" => true])]
     #[Assert\NotBlank]
     private ?bool $available = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Assert\DateTime]
+    private ?DateTimeImmutable $redeemedAt = null;
+
+    #[ORM\ManyToOne(inversedBy: 'redeemedCodes')]
+    private ?User $redeemedBy = null;
 
     public function __construct()
     {
@@ -147,6 +155,30 @@ class RedemptionCode
     public function setAvailable(bool $available): self
     {
         $this->available = $available;
+
+        return $this;
+    }
+
+    public function getRedeemedAt(): ?DateTimeImmutable
+    {
+        return $this->redeemedAt;
+    }
+
+    public function setRedeemedAt(?DateTimeImmutable $redeemedAt): self
+    {
+        $this->redeemedAt = $redeemedAt;
+
+        return $this;
+    }
+
+    public function getRedeemedBy(): ?User
+    {
+        return $this->redeemedBy;
+    }
+
+    public function setRedeemedBy(?User $redeemedBy): self
+    {
+        $this->redeemedBy = $redeemedBy;
 
         return $this;
     }

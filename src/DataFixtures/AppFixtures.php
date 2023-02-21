@@ -90,7 +90,6 @@ class AppFixtures extends Fixture
 
         $role_user = new Role();
         $role_user->setName("Utilisateur")
-            ->setSlug("user")
             ->setVisible(true)
             ->setDisplayedOnProfile(true)
             ->setProfileDisplayRow(2)
@@ -101,7 +100,6 @@ class AppFixtures extends Fixture
 
         $role_member = new Role();
         $role_member->setName("Membre")
-            ->setSlug("member")
             ->setVisible(true)
             ->setDisplayedOnProfile(true)
             ->setProfileDisplayRow(2)
@@ -123,7 +121,6 @@ class AppFixtures extends Fixture
 
         $role_vip_plus = new Role();
         $role_vip_plus->setName("VIP+")
-            ->setSlug("vip-plus")
             ->setVisible(true)
             ->setDisplayedOnProfile(true)
             ->setProfileDisplayRow(2)
@@ -135,7 +132,6 @@ class AppFixtures extends Fixture
 
         $role_beta_tester = new Role();
         $role_beta_tester->setName("Bêta-testeur")
-            ->setSlug("beta-tester")
             ->setVisible(true)
             ->setColor("1abc9c")
             ->setInternalName("ROLE_BETA");
@@ -150,7 +146,6 @@ class AppFixtures extends Fixture
 
         $role_moderator = new Role();
         $role_moderator->setName("Modérateur")
-            ->setSlug("moderator")
             ->setVisible(true)
             ->setDisplayedOnProfile(true)
             ->setProfileDisplayRow(1)
@@ -172,7 +167,6 @@ class AppFixtures extends Fixture
 
         $role_founder = new Role();
         $role_founder->setName("Fondateur")
-            ->setSlug("founder")
             ->setVisible(true)
             ->setDisplayedOnProfile(true)
             ->setProfileDisplayRow(1)
@@ -190,7 +184,6 @@ class AppFixtures extends Fixture
 
         $role_mc_founder = new Role();
         $role_mc_founder->setName("Fondateur")
-            ->setSlug("founder")
             ->setVisible(true)
             ->setInternalName("ROLE_MINECRAFT_OFFICER")
             ->setParent($role_mc_admin);
@@ -198,7 +191,6 @@ class AppFixtures extends Fixture
 
         $role_resident = new Role();
         $role_resident->setName("Résident")
-            ->setSlug("resident")
             ->setVisible(true)
             ->setColor("11806a")
             ->setInternalName("ROLE_MINECRAFT_RESIDENT");
@@ -594,7 +586,7 @@ class AppFixtures extends Fixture
                 ->setBasePriceTTC($basePrice)
                 ->setPriceHT($price)
                 ->setPriceTTC($price)
-                ->setAmount($amount)
+                ->setQuantity($amount)
                 ->setDelivery($amount === -1 || $price === 0 ? $faker->randomElement($deliveriesForVirtualProducts) : $faker->randomElement($deliveries))
                 ->setReference($faker->regexify("[A-Z]{2}[A-Z0-9]{2}"))
                 ->setPublicDiscountText($publicDiscountText)

@@ -62,6 +62,23 @@ class Discount
     #[ORM\Column(nullable: true)]
     private ?int $priority = null;
 
+    #[ORM\Column(nullable: true, options: ["unsigned" => true])]
+    #[Assert\Positive(message: "La réduction maximale doit être supérieure à 0€. S'il n'y a pas de limite, laissez ce champ vide")]
+    private ?int $maxDiscountAmount = null;
+
+    #[ORM\Column(nullable: true, options: ["unsigned" => true])]
+    #[Assert\PositiveOrZero(message: "La quantité maximale d'articles éligibles dans le panier ne peut pas être négative. S'il n'y a pas de limite, laissez ce champ vide")]
+    private ?int $maxEligibleItemQuantityInCart = null;
+
+    #[ORM\Column]
+    #[Assert\GreaterThanOrEqual(-1, message: "La quantité ne peut pas être inférieure à -1 (-1 = infini, 0 = plus utilisable)")]
+    #[Assert\NotBlank]
+    private ?int $quantity = null;
+
+    #[ORM\Column(options: ["default" => false])]
+    #[Assert\NotBlank]
+    private ?bool $enabled = null;
+
     #[ORM\OneToMany(mappedBy: 'discount', targetEntity: ConstraintGroup::class, orphanRemoval: true)]
     private Collection $constraintGroups;
 
@@ -70,6 +87,7 @@ class Discount
 
     public function __construct()
     {
+        $this->enabled = false;
         $this->constraintGroups = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
     }
@@ -195,6 +213,54 @@ class Discount
     public function setPriority(?int $priority): self
     {
         $this->priority = $priority;
+
+        return $this;
+    }
+
+    public function getMaxDiscountAmount(): ?int
+    {
+        return $this->maxDiscountAmount;
+    }
+
+    public function setMaxDiscountAmount(?int $maxDiscountAmount): self
+    {
+        $this->maxDiscountAmount = $maxDiscountAmount;
+
+        return $this;
+    }
+
+    public function getMaxEligibleItemQuantityInCart(): ?int
+    {
+        return $this->maxEligibleItemQuantityInCart;
+    }
+
+    public function setMaxEligibleItemQuantityInCart(?int $maxEligibleItemQuantityInCart): self
+    {
+        $this->maxEligibleItemQuantityInCart = $maxEligibleItemQuantityInCart;
+
+        return $this;
+    }
+
+    public function getQuantity(): ?int
+    {
+        return $this->quantity;
+    }
+
+    public function setQuantity(int $quantity): self
+    {
+        $this->quantity = $quantity;
+
+        return $this;
+    }
+
+    public function isEnabled(): ?bool
+    {
+        return $this->enabled;
+    }
+
+    public function setEnabled(bool $enabled): self
+    {
+        $this->enabled = $enabled;
 
         return $this;
     }

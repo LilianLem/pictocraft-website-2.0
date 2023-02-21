@@ -71,7 +71,8 @@ class Order
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $paypalToken = null;
 
-    #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderItem::class, orphanRemoval: true)]
+    /** @var Collection<int, OrderItem>  */
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderItem::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $items;
 
     #[ORM\OneToOne(mappedBy: 'order', cascade: ['persist', 'remove'])]

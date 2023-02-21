@@ -68,6 +68,14 @@ class Constraint
     #[Assert\Positive(message: "Le montant maximum de la commande doit être supérieur à 0€. S'il n'y en a pas, laissez ce champ vide")]
     private ?int $maxOrderAmount = null;
 
+    #[ORM\Column(options: ["unsigned" => true], nullable: true)]
+    #[Assert\Positive(message: "La quantité minimale doit être supérieure à 0")]
+    private ?int $minQuantity = null;
+
+    #[ORM\Column(options: ["unsigned" => true], nullable: true)]
+    #[Assert\Positive(message: "La quantité maximale doit être supérieure à 0. S'il n'y a pas de limite, laissez ce champ vide")]
+    private ?int $maxQuantity = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -189,6 +197,30 @@ class Constraint
     public function setMaxOrderAmount(?int $maxOrderAmount): self
     {
         $this->maxOrderAmount = $maxOrderAmount;
+
+        return $this;
+    }
+
+    public function getMinQuantity(): ?int
+    {
+        return $this->minQuantity;
+    }
+
+    public function setMinQuantity(?int $minQuantity): self
+    {
+        $this->minQuantity = $minQuantity;
+
+        return $this;
+    }
+
+    public function getMaxQuantity(): ?int
+    {
+        return $this->maxQuantity;
+    }
+
+    public function setMaxQuantity(?int $maxQuantity): self
+    {
+        $this->maxQuantity = $maxQuantity;
 
         return $this;
     }

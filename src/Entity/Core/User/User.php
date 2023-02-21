@@ -124,7 +124,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $giftedItems;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: RedemptionCode::class)]
-    private Collection $redemptionCodes;
+    private Collection $linkedCodes;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: UserSteamGame::class, orphanRemoval: true)]
     private Collection $steamGames;
@@ -166,6 +166,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToOne(targetEntity: self::class)]
     private ?self $accessGrantedBy = null;
 
+    #[ORM\OneToMany(mappedBy: 'redeemedBy', targetEntity: RedemptionCode::class)]
+    private Collection $redeemedCodes;
+
     public function __construct()
     {
         $this->warnings = 0;
@@ -174,7 +177,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->enabled = false;
         $this->orders = new ArrayCollection();
         $this->giftedItems = new ArrayCollection();
-        $this->redemptionCodes = new ArrayCollection();
+        $this->linkedCodes = new ArrayCollection();
         $this->steamGames = new ArrayCollection();
         $this->divisionRoles = new ArrayCollection();
         $this->responsibleOfUsers = new ArrayCollection();
@@ -186,6 +189,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->badges = new ArrayCollection();
         $this->secretSantaParticipations = new ArrayCollection();
         $this->surveysAnsweredAnonymously = new ArrayCollection();
+        $this->redeemedCodes = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -550,24 +554,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @return Collection<int, RedemptionCode>
      */
-    public function getRedemptionCodes(): Collection
+    public function getLinkedCodes(): Collection
     {
-        return $this->redemptionCodes;
+        return $this->linkedCodes;
     }
 
-    public function addRedemptionCode(RedemptionCode $redemptionCode): self
+    public function addLinkedCode(RedemptionCode $redemptionCode): self
     {
-        if (!$this->redemptionCodes->contains($redemptionCode)) {
-            $this->redemptionCodes->add($redemptionCode);
+        if (!$this->linkedCodes->contains($redemptionCode)) {
+            $this->linkedCodes->add($redemptionCode);
             $redemptionCode->setUser($this);
         }
 
         return $this;
     }
 
-    public function removeRedemptionCode(RedemptionCode $redemptionCode): self
+    public function removeLinkedCode(RedemptionCode $redemptionCode): self
     {
-        if ($this->redemptionCodes->removeElement($redemptionCode)) {
+        if ($this->linkedCodes->removeElement($redemptionCode)) {
             // set the owning side to null (unless already changed)
             if ($redemptionCode->getUser() === $this) {
                 $redemptionCode->setUser(null);
@@ -870,6 +874,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setAccessGrantedBy(?self $accessGrantedBy): self
     {
         $this->accessGrantedBy = $accessGrantedBy;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, RedemptionCode>
+     */
+    public function getRedeemedCodes(): Collection
+    {
+        return $this->redeemedCodes;
+    }
+
+    public function addRedeemedCode(RedemptionCode $redemptionCode): self
+    {
+        if (!$this->redeemedCodes->contains($redemptionCode)) {
+            $this->redeemedCodes->add($redemptionCode);
+            $redemptionCode->setRedeemedBy($this);
+        }
+
+        return $this;
+    }
+
+    public function removeRedeemedCode(RedemptionCode $redemptionCode): self
+    {
+        if ($this->redeemedCodes->removeElement($redemptionCode)) {
+            // set the owning side to null (unless already changed)
+            if ($redemptionCode->getRedeemedBy() === $this) {
+                $redemptionCode->setRedeemedBy(null);
+            }
+        }
 
         return $this;
     }
