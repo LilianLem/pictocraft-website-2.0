@@ -16,7 +16,8 @@
 
         <input type="hidden" name="_csrf_token" value="{{ csrf_token("authenticate") }}">
 
-        <input type="hidden" name="_target_path" value="{{ app.request.headers.get("referer") ?? path("home") }}">
+        <!-- Check if https://symfony.com/doc/current/security/form_login.html#using-the-referring-url is working + see https://symfony.com/blog/new-in-symfony-6-2-dx-improvements#simpler-way-to-get-current-route-in-templates if not working to improve retrieving route on referer page and send it as GET parameter -->
+        <!--<input type="hidden" name="_target_path" value="{# app.request.headers.get("referer") ?? path("home") #}">-->
 
         <button type="submit">login</button>
     </form>
