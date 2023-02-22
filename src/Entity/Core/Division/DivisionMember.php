@@ -22,7 +22,7 @@ class DivisionMember
     #[ORM\Column(options: ["unsigned" => true])]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'roles')]
+    #[ORM\ManyToOne(inversedBy: 'divisionRoles')]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
     private ?User $user = null;

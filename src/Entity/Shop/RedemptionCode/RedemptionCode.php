@@ -27,7 +27,7 @@ class RedemptionCode
     #[Assert\NotBlank]
     private ?string $code = null;
 
-    #[ORM\ManyToOne(inversedBy: 'redemptionCodes')]
+    #[ORM\ManyToOne(inversedBy: 'linkedCodes')]
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'redemptionCodes')]
