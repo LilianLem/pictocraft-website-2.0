@@ -2,6 +2,7 @@
 
 namespace App\Entity\Shop;
 
+use App\Entity\External\Vat\VatRate;
 use App\Repository\Shop\CategoryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -57,6 +58,9 @@ class Category
 
     #[ORM\OneToMany(mappedBy: 'category', targetEntity: ProductCategory::class, orphanRemoval: true)]
     private Collection $categoryProducts;
+
+    #[ORM\ManyToOne(inversedBy: 'productCategories')]
+    private ?VatRate $defaultVatRate = null;
 
     public function __construct()
     {
@@ -189,5 +193,27 @@ class Category
         }
 
         return $this;
+    }
+
+    public function getDefaultVatRate(): ?VatRate
+    {
+        return $this->defaultVatRate;
+    }
+
+    public function setDefaultVatRate(?VatRate $defaultVatRate): self
+    {
+        $this->defaultVatRate = $defaultVatRate;
+
+        return $this;
+    }
+
+    public function getInheritedVatRate(): ?VatRate
+    {
+        return $this->getParent()?->getDefaultVatRate() ?? null;
+    }
+
+    public function getApplicableVatRate(): ?VatRate
+    {
+        return $this->getDefaultVatRate() ?? $this->getInheritedVatRate();
     }
 }

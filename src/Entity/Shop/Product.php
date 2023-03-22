@@ -2,6 +2,7 @@
 
 namespace App\Entity\Shop;
 
+use App\Entity\External\Vat\VatRate;
 use App\Entity\Shop\Attribute\Value;
 use App\Entity\Shop\Delivery\Delivery;
 use App\Entity\Shop\OrderItem\OrderItem;
@@ -110,6 +111,9 @@ class Product
 
     #[ORM\OneToOne(mappedBy: 'product', cascade: ['persist', 'remove'])]
     private ?ProductAutomaticDelivery $automaticDeliveryData = null;
+
+    #[ORM\ManyToOne(inversedBy: 'products')]
+    private ?VatRate $vatRate = null;
 
     public function __construct()
     {
@@ -353,6 +357,14 @@ class Product
         return $this;
     }
 
+    public function getMainCategory(): ?Category
+    {
+        if($this->productCategories->isEmpty()) return null;
+
+        $productCategory = $this->productCategories->findFirst(fn(int $key, ProductCategory $pc): bool => $pc->isMain());
+        return $productCategory?->getCategory() ?? null;
+    }
+
     /**
      * @return Collection<int, Value>
      */
@@ -422,5 +434,27 @@ class Product
         $this->automaticDeliveryData = $automaticDeliveryData;
 
         return $this;
+    }
+
+    public function getVatRate(): ?VatRate
+    {
+        return $this->vatRate;
+    }
+
+    public function setVatRate(?VatRate $vatRate): self
+    {
+        $this->vatRate = $vatRate;
+
+        return $this;
+    }
+
+    public function getInheritedVatRate(): ?VatRate
+    {
+        return $this->getMainCategory()?->getApplicableVatRate() ?? null;
+    }
+
+    public function getApplicableVatRate(): ?VatRate
+    {
+        return $this->getVatRate() ?? $this->getInheritedVatRate();
     }
 }
