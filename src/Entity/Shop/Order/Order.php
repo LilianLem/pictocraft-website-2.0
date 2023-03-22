@@ -7,7 +7,8 @@ use App\Entity\External\Geo\Country;
 use App\Entity\External\Geo\France\CommunePostalData;
 use App\Entity\Shop\Discount\AppliedDiscount;
 use App\Entity\Shop\OrderItem\OrderItem;
-use App\Entity\Shop\PaymentMethod\PaymentMethod;
+use App\Entity\Shop\Payment\Payment;
+use App\Entity\Shop\Payment\PaymentMethod;
 use App\Entity\Shop\WalletTransaction;
 use App\Repository\Shop\Order\OrderRepository;
 use DateTimeImmutable;
@@ -50,11 +51,6 @@ class Order
     #[Assert\NotBlank]
     private ?int $priceTTC = null;
 
-    #[ORM\ManyToOne(inversedBy: 'orders')]
-    #[ORM\JoinColumn(nullable: false)]
-    #[Assert\NotBlank]
-    private ?PaymentMethod $paymentMethod = null;
-
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255, maxMessage: "Le commentaire ne doit pas dépasser {{ limit }} caractères")]
     private ?string $comment = null;
@@ -68,15 +64,9 @@ class Order
     #[Assert\DateTime]
     private ?DateTimeInterface $updatedAt = null;
 
-    #[ORM\Column(length: 20, nullable: true)]
-    private ?string $paypalToken = null;
-
     /** @var Collection<int, OrderItem>  */
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderItem::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $items;
-
-    #[ORM\OneToOne(mappedBy: 'order', cascade: ['persist', 'remove'])]
-    private ?WalletTransaction $walletTransaction = null;
 
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: AppliedDiscount::class)]
     private Collection $appliedDiscounts;
@@ -109,6 +99,9 @@ class Order
     #[ORM\ManyToOne]
     private ?Country $addressCountry = null;
 
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: Payment::class, orphanRemoval: true)]
+    private Collection $payments;
+
     // ------ Sauvegarde au moment de la commande de l'adresse définie par l'utilisateur dans ses paramètres comme étant celle à utiliser pour la facturation et pour la livraison des produits physiques le cas échéant ------ \\
 
     public function __construct()
@@ -118,6 +111,7 @@ class Order
         $this->items = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
         $this->statusHistory = new ArrayCollection();
+        $this->payments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -221,18 +215,6 @@ class Order
         return $this;
     }
 
-    public function getPaypalToken(): ?string
-    {
-        return $this->paypalToken;
-    }
-
-    public function setPaypalToken(?string $paypalToken): self
-    {
-        $this->paypalToken = $paypalToken;
-
-        return $this;
-    }
-
     /**
      * @return Collection<int, OrderItem>
      */
@@ -260,27 +242,6 @@ class Order
             }
         }
 
-        return $this;
-    }
-
-    public function getWalletTransaction(): ?WalletTransaction
-    {
-        return $this->walletTransaction;
-    }
-
-    public function setWalletTransaction(?WalletTransaction $walletTransaction): self
-    {
-        // unset the owning side of the relation if necessary
-        if ($walletTransaction === null && $this->walletTransaction !== null) {
-            $this->walletTransaction->setOrder(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($walletTransaction !== null && $walletTransaction->getOrder() !== $this) {
-            $walletTransaction->setOrder($this);
-        }
-
-        $this->walletTransaction = $walletTransaction;
 
         return $this;
     }
@@ -412,6 +373,36 @@ class Order
             // set the owning side to null (unless already changed)
             if ($statusHistory->getOrder() === $this) {
                 $statusHistory->setOrder(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Payment>
+     */
+    public function getPayments(): Collection
+    {
+        return $this->payments;
+    }
+
+    public function addPayment(Payment $payment): self
+    {
+        if (!$this->payments->contains($payment)) {
+            $this->payments->add($payment);
+            $payment->setOrder($this);
+        }
+
+        return $this;
+    }
+
+    public function removePayment(Payment $payment): self
+    {
+        if ($this->payments->removeElement($payment)) {
+            // set the owning side to null (unless already changed)
+            if ($payment->getOrder() === $this) {
+                $payment->setOrder(null);
             }
         }
 

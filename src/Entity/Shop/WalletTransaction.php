@@ -4,6 +4,7 @@ namespace App\Entity\Shop;
 
 use App\Entity\Core\User\User;
 use App\Entity\Shop\Order\Order;
+use App\Entity\Shop\Payment\Payment;
 use App\Repository\Shop\WalletTransactionRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
@@ -24,7 +25,7 @@ class WalletTransaction
     private ?User $user = null;
 
     #[ORM\OneToOne(inversedBy: 'walletTransaction', cascade: ['persist', 'remove'])]
-    private ?Order $order = null;
+    private ?Payment $payment = null;
 
     #[ORM\Column(length: 64, nullable: true)]
     #[Assert\Length(max: 64, maxMessage: "La description ne doit pas dépasser {{ limit }} caractères")]
@@ -67,14 +68,14 @@ class WalletTransaction
         return $this;
     }
 
-    public function getOrder(): ?Order
+    public function getPayment(): ?Payment
     {
-        return $this->order;
+        return $this->payment;
     }
 
-    public function setOrder(?Order $order): self
+    public function setPayment(?Payment $payment): self
     {
-        $this->order = $order;
+        $this->payment = $payment;
 
         return $this;
     }

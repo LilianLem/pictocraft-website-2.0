@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Entity\Shop\PaymentMethod;
+namespace App\Entity\Shop\Payment;
 
-enum TypeEnum: string
+enum PaymentMethodTypeEnum: string
 {
     case AUTOMATIC = "automatic";
     case MANUAL = "manual";

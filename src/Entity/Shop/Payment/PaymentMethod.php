@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Entity\Shop\PaymentMethod;
+namespace App\Entity\Shop\Payment;
 
 use App\Entity\Shop\Order\Order;
-use App\Repository\Shop\PaymentMethod\PaymentMethodRepository;
+use App\Repository\Shop\Payment\PaymentMethodRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -27,7 +27,7 @@ class PaymentMethod
 
     #[ORM\Column(type: "payment_method_type_enum")]
     #[Assert\NotBlank]
-    private ?TypeEnum $type = null;
+    private ?PaymentMethodTypeEnum $type = null;
 
     #[ORM\Column(options: ["default" => false])]
     #[Assert\NotBlank]
@@ -37,14 +37,15 @@ class PaymentMethod
     #[Assert\NotBlank]
     private ?bool $selectable = null;
 
-    #[ORM\OneToMany(mappedBy: 'paymentMethod', targetEntity: Order::class)]
-    private Collection $orders;
+    #[ORM\OneToMany(mappedBy: 'paymentMethod', targetEntity: Payment::class)]
+    private Collection $payments;
 
     public function __construct()
     {
         $this->enabled = false;
         $this->selectable = false;
         $this->orders = new ArrayCollection();
+        $this->payments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -64,12 +65,12 @@ class PaymentMethod
         return $this;
     }
 
-    public function getType(): ?TypeEnum
+    public function getType(): ?PaymentMethodTypeEnum
     {
         return $this->type;
     }
 
-    public function setType(TypeEnum $type): self
+    public function setType(PaymentMethodTypeEnum $type): self
     {
         $this->type = $type;
 
@@ -124,6 +125,36 @@ class PaymentMethod
             // set the owning side to null (unless already changed)
             if ($order->getPaymentMethod() === $this) {
                 $order->setPaymentMethod(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Payment>
+     */
+    public function getPayments(): Collection
+    {
+        return $this->payments;
+    }
+
+    public function addPayment(Payment $payment): self
+    {
+        if (!$this->payments->contains($payment)) {
+            $this->payments->add($payment);
+            $payment->setPaymentMethod($this);
+        }
+
+        return $this;
+    }
+
+    public function removePayment(Payment $payment): self
+    {
+        if ($this->payments->removeElement($payment)) {
+            // set the owning side to null (unless already changed)
+            if ($payment->getPaymentMethod() === $this) {
+                $payment->setPaymentMethod(null);
             }
         }
 

@@ -4,14 +4,14 @@ namespace App\Entity\Shop\Order;
 
 enum StatusEnum: string
 {
-    case PAYMENT_PENDING = "En attente de paiement";
-    case PAYMENT_FAILED = "Paiement échoué";
-    case PAYMENT_CANCELLED = "Paiement annulé";
-    case PAYMENT_DONE = "Payé";
+    case CART_CURRENT = "Panier actuel";
 
-    case ORDER_CANCELLED = "Commande annulée";
-    case ORDER_EXPIRED = "Commande expirée";
-    case ORDER_ABORTED = "Commande abandonnée";
+    case PAYMENT_PENDING = "En attente de paiement";
+    case ORDER_CONFIRMED = "Confirmée";
+
+    case ORDER_CANCELLED = "Annulée"; # Use only when an order first had Confirmed status (return, withdrawal...)
+    case ORDER_EXPIRED = "Expirée"; # Use only after a period of time if nothing happened on a Payment pending order
+    case ORDER_ABORTED = "Abandonnée"; # Use only on an order with Payment pending status if it's manually aborted
 
     case INFO_NEEDED = "En attente d'informations";
 }

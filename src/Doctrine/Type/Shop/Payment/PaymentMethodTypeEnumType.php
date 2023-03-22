@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Doctrine\Type\Shop\PaymentMethod;
+namespace App\Doctrine\Type\Shop\Payment;
 
 use App\Doctrine\Type\EnumType;
-use App\Entity\Shop\PaymentMethod\TypeEnum;
+use App\Entity\Shop\Payment\PaymentMethodTypeEnum;
 
-class TypeEnumType extends EnumType
+class PaymentMethodTypeEnumType extends EnumType
 {
     public function getEnum(): string
     {
-        return TypeEnum::class;
+        return PaymentMethodTypeEnum::class;
     }
 
     public function getName(): string

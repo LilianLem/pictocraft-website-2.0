@@ -7,7 +7,8 @@ doctrine:
             gender_enum: App\Doctrine\Type\Core\GenderEnumType
             division_role_enum: App\Doctrine\Type\Core\Division\RoleEnumType
             question_field_type_enum: App\Doctrine\Type\Modules\Survey\QuestionFieldTypeEnumType
-            payment_method_type_enum: App\Doctrine\Type\Shop\PaymentMethod\TypeEnumType
+            payment_method_type_enum: App\Doctrine\Type\Shop\Payment\PaymentMethodTypeEnumType
+            payment_status_enum: App\Doctrine\Type\Shop\Payment\StatusEnumType
             delivery_type_enum: App\Doctrine\Type\Shop\Delivery\TypeEnumType
             discount_applies_on_enum: App\Doctrine\Type\Shop\Discount\DiscountAppliesOnEnumType
             game_key_type_enum: App\Doctrine\Type\Shop\GameKey\TypeEnumType
