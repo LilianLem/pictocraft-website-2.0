@@ -5,6 +5,7 @@ namespace App\Entity\Shop\Order;
 enum StatusEnum: string
 {
     case CART_CURRENT = "Panier actuel";
+    case CART_ABORTED = "Panier abandonné";
 
     case PAYMENT_PENDING = "En attente de paiement";
     case ORDER_CONFIRMED = "Confirmée";

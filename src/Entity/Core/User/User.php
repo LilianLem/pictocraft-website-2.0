@@ -13,6 +13,7 @@ use App\Entity\Modules\SecretSanta\Participant;
 use App\Entity\Modules\Survey\SurveyUserAnonymous;
 use App\Entity\Modules\Survey\Entry;
 use App\Entity\Shop\Order\Order;
+use App\Entity\Shop\Order\StatusEnum;
 use App\Entity\Shop\OrderItem\OrderItem;
 use App\Entity\Shop\RedemptionCode\RedemptionCode;
 use App\Entity\Shop\WalletTransaction;
@@ -541,6 +542,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         return $this;
+    }
+
+    public function getCurrentCart(): ?Order
+    {
+        if($this->getOrders()->isEmpty()) return null;
+        return $this->getOrders()->findFirst(fn(int $key, Order $order) => $order->getCurrentStatus()->getStatus() === StatusEnum::CART_CURRENT);
     }
 
     /**

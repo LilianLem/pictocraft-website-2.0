@@ -74,7 +74,8 @@ class Order
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: AppliedDiscount::class)]
     private Collection $appliedDiscounts;
 
-    #[ORM\OneToMany(mappedBy: 'order', targetEntity: Status::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: Status::class, orphanRemoval: true, cascade: ["persist", "remove"])]
+    #[ORM\OrderBy(["date" => "ASC"])]
     private Collection $statusHistory;
 
     // ------ Sauvegarde au moment de la commande de l'adresse définie par l'utilisateur dans ses paramètres comme étant celle à utiliser pour la facturation et pour la livraison des produits physiques le cas échéant ------ \\
@@ -439,6 +440,19 @@ class Order
 
         return $this;
     }
+
+    public function getCurrentStatus(): ?Status
+    {
+        $statusHistory = $this->getStatusHistory();
+        return $statusHistory?->last() ?? null;
+    }
+
+    public function getStatusDetails(StatusEnum $status): ?Status
+    {
+        $statusHistory = $this->getStatusHistory();
+        return $statusHistory?->findFirst(fn(int $key, Status $statusToCompare) => $statusToCompare->getStatus() === $status) ?? null;
+    }
+
 
     /**
      * @return Collection<int, Payment>

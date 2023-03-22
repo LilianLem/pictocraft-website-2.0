@@ -94,7 +94,7 @@ class OrderItem
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $deliveryTrackingLink = null;
 
-    #[ORM\OneToMany(mappedBy: 'orderItem', targetEntity: Status::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'orderItem', targetEntity: Status::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $statusHistory;
 
     // Indique l'article qui a servi à renouveler cet article
@@ -441,6 +441,18 @@ class OrderItem
         }
 
         return $this;
+    }
+
+    public function getCurrentStatus(): ?Status
+    {
+        $statusHistory = $this->getStatusHistory();
+        return $statusHistory?->last() ?? null;
+    }
+
+    public function getStatusDetails(StatusEnum $status): ?Status
+    {
+        $statusHistory = $this->getStatusHistory();
+        return $statusHistory?->findFirst(fn(int $key, Status $statusToCompare) => $statusToCompare->getStatus() === $status) ?? null;
     }
 
     public function getFollowedBy(): ?self

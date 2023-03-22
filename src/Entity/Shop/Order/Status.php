@@ -51,12 +51,12 @@ class Status
         return $this;
     }
 
-    public function getStatus()
+    public function getStatus(): ?StatusEnum
     {
         return $this->status;
     }
 
-    public function setStatus($status): self
+    public function setStatus(StatusEnum $status): self
     {
         $this->status = $status;
 
