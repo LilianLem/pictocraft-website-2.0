@@ -5,10 +5,17 @@ namespace App\Entity\Shop\Order;
 use App\Repository\Shop\Order\StatusRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: StatusRepository::class)]
 #[ORM\Table(name: 'shop_order_status')]
+#[ORM\UniqueConstraint("order_status_unique", columns: ["order_id", "status"])]
+#[UniqueEntity(
+    fields: ["order", "status"],
+    errorPath: "status",
+    message: "Ce statut est déjà présent sur cette commande",
+)]
 class Status
 {
     #[ORM\Id]
