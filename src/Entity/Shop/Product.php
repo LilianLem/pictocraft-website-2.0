@@ -106,8 +106,8 @@ class Product
     #[ORM\JoinTable(name: "shop_product_attribute_value")]
     private Collection $attributes;
 
-    #[ORM\OneToMany(mappedBy: 'item', targetEntity: OrderItem::class, orphanRemoval: true, cascade: ["persist", "remove"])]
-    private Collection $orders;
+    #[ORM\OneToMany(mappedBy: 'product', targetEntity: OrderItem::class, orphanRemoval: true, cascade: ["persist", "remove"])]
+    private Collection $orderItems;
 
     #[ORM\OneToOne(mappedBy: 'product', cascade: ['persist', 'remove'])]
     private ?ProductAutomaticDelivery $automaticDeliveryData = null;
@@ -127,7 +127,7 @@ class Product
         $this->priceTTC = 0;
         $this->productCategories = new ArrayCollection();
         $this->attributes = new ArrayCollection();
-        $this->orders = new ArrayCollection();
+        $this->orderItems = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -392,27 +392,29 @@ class Product
     /**
      * @return Collection<int, OrderItem>
      */
-    public function getOrders(): Collection
+    public function getOrderItems(): Collection
     {
-        return $this->orders;
+        return $this->orderItems;
     }
 
-    public function addOrder(OrderItem $order): self
+    // TODO: remove method
+    public function addOrderItem(OrderItem $orderItem): self
     {
-        if (!$this->orders->contains($order)) {
-            $this->orders->add($order);
-            $order->setItem($this);
+        if (!$this->orderItems->contains($orderItem)) {
+            $this->orderItems->add($orderItem);
+            $orderItem->setProduct($this);
         }
 
         return $this;
     }
 
-    public function removeOrder(OrderItem $order): self
+    // TODO: remove method
+    public function removeOrderItem(OrderItem $orderItem): self
     {
-        if ($this->orders->removeElement($order)) {
+        if ($this->orderItems->removeElement($orderItem)) {
             // set the owning side to null (unless already changed)
-            if ($order->getItem() === $this) {
-                $order->setItem(null);
+            if ($orderItem->getProduct() === $this) {
+                $orderItem->setProduct(null);
             }
         }
 

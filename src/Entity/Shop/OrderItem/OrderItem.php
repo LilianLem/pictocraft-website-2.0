@@ -19,10 +19,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OrderItemRepository::class)]
 #[ORM\Table(name: 'shop_order_item')]
-#[ORM\UniqueConstraint("order_item_unique", columns: ["order_id", "item_id"])]
+#[ORM\UniqueConstraint("order_item_unique", columns: ["order_id", "product_id"])]
 #[UniqueEntity(
-    fields: ["order", "item"],
-    errorPath: "item",
+    fields: ["order", "product"],
+    errorPath: "product",
     message: "Cet article est déjà présent dans la commande",
 )]
 class OrderItem
@@ -37,10 +37,10 @@ class OrderItem
     #[Assert\NotBlank]
     private ?Order $order = null;
 
-    #[ORM\ManyToOne(inversedBy: 'orders')]
+    #[ORM\ManyToOne(inversedBy: 'orderItems')]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
-    private ?Product $item = null;
+    private ?Product $product = null;
 
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
     #[Assert\PositiveOrZero(message: "Le prix de base HT unitaire ne peut pas être négatif")]
@@ -133,14 +133,14 @@ class OrderItem
         return $this;
     }
 
-    public function getItem(): ?Product
+    public function getProduct(): ?Product
     {
-        return $this->item;
+        return $this->product;
     }
 
-    public function setItem(?Product $item): self
+    public function setProduct(?Product $product): self
     {
-        $this->item = $item;
+        $this->product = $product;
 
         return $this;
     }
