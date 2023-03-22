@@ -13,26 +13,41 @@ use App\Entity\Core\User\User;
 use App\Entity\External\Geo\Country;
 use App\Entity\External\Geo\France\CommunePostalData;
 use App\Entity\External\Geo\France\Departement;
+use App\Entity\External\Vat\VatRate;
 use App\Entity\Shop\Attribute\Attribute;
 use App\Entity\Shop\Attribute\Value;
 use App\Entity\Shop\Category;
 use App\Entity\Shop\Delivery\Delivery;
+use App\Entity\Shop\Delivery\TypeEnum;
 use App\Entity\Shop\Delivery\TypeEnum as DeliveryTypeEnum;
 use App\Entity\Shop\Order\Order;
-use App\Entity\Shop\PaymentMethod\PaymentMethod;
-use App\Entity\Shop\PaymentMethod\TypeEnum as PaymentMethodTypeEnum;
+use App\Entity\Shop\Order\Status;
+use App\Entity\Shop\Order\Status as OrderStatus;
+use App\Entity\Shop\Order\StatusEnum;
+use App\Entity\Shop\Order\StatusEnum as OrderStatusEnum;
+use App\Entity\Shop\OrderItem\OrderItem;
+use App\Entity\Shop\OrderItem\Status as OrderItemStatus;
+use App\Entity\Shop\OrderItem\StatusEnum as OrderItemStatusEnum;
+use App\Entity\Shop\Payment\Payment;
+use App\Entity\Shop\Payment\PaymentMethod;
+use App\Entity\Shop\Payment\PaymentMethodTypeEnum;
 use App\Entity\Shop\Product;
 use App\Entity\Shop\ProductCategory;
 use App\Repository\External\Geo\CountryRepository;
 use App\Repository\External\Geo\France\CommunePostalDataRepository;
 use App\Repository\External\Geo\France\DepartementRepository;
+use App\Repository\External\Vat\VatRateRepository;
 use Bezhanov\Faker\Provider\Avatar;
 use Bezhanov\Faker\Provider\Commerce;
 use Bluemmb\Faker\PicsumPhotosProvider;
+use Carbon\Carbon;
+use DateTime;
 use DateTimeImmutable;
 use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectManager;
+use Exception;
 use Faker\Factory;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -44,7 +59,6 @@ class AppFixtures extends Fixture
     private UserPasswordHasherInterface $passwordHasher;
     private CountryRepository $countryRepository;
     private CommunePostalDataRepository $communePostalDataRepository;
-    private DepartementRepository $departementRepository;
 
     /** @var Departement[] $departements */
     private readonly array $departements;
@@ -58,18 +72,22 @@ class AppFixtures extends Fixture
     /** @var string[] $addressLineBuildingOutsideCollection */
     private readonly array $addressLineBuildingOutsideCollection;
 
-    public function __construct(LoggerInterface $logger, EntityManagerInterface $em, CountryRepository $countryRepository, CommunePostalDataRepository $communePostalDataRepository, DepartementRepository $departementRepository, UserPasswordHasherInterface $passwordHasher)
+    /** @var VatRate[] $vatRates */
+    private readonly array $vatRates;
+
+    public function __construct(LoggerInterface $logger, EntityManagerInterface $em, CountryRepository $countryRepository, CommunePostalDataRepository $communePostalDataRepository, DepartementRepository $departementRepository, VatRateRepository $vatRateRepository, UserPasswordHasherInterface $passwordHasher)
     {
         $this->logger = $logger;
         $this->em = $em;
         $this->passwordHasher = $passwordHasher;
         $this->countryRepository = $countryRepository;
         $this->communePostalDataRepository = $communePostalDataRepository;
-        $this->departementRepository = $departementRepository;
-        $this->departements = $this->departementRepository->findAll();
+        $this->vatRateRepository = $vatRateRepository;
+        $this->departements = $departementRepository->findAll();
         $this->france = $this->countryRepository->findOneBy(["isoCode_alpha2" => "FR"]);
         $this->addressLineBuildingInsideCollection = ["RDC", "1er étage", "2ème étage", "3ème étage"];
         $this->addressLineBuildingOutsideCollection = ["Bâtiment A", "Bâtiment B", "Bâtiment C", "Lotissement A", "Lotissement B", "Lotissement C"];
+        $this->vatRates = $vatRateRepository->findAll();
     }
 
     public function load(ObjectManager $manager): void
@@ -383,7 +401,7 @@ class AppFixtures extends Fixture
             }
 
             $userStats = new Stats();
-            $userStats->setLastLoginAt($faker->dateTimeBetween("-1 year", "-3 days"))
+            $userStats->setLastLoginAt($faker->dateTimeBetween(Carbon::createFromFormat("Y-m-d", $user->getFirstLogin())->isAfter(Carbon::parse("1 year ago")) ? $user->getFirstLogin() : "-1 year", "-3 days"))
                 ->setLastLoginAttemptAt($faker->boolean(80) ? $userStats->getLastLoginAt() : $faker->dateTimeInInterval($userStats->getLastLoginAt()->format("Y-m-d H:i:s"), "+2 days"))
                 ->setNbLoginAttempts($userStats->getLastLoginAt() === $userStats->getLastLoginAttemptAt() ? 0 : mt_rand(1, 3));
             $user->setStats($userStats);
@@ -462,14 +480,25 @@ class AppFixtures extends Fixture
             $category->setName($faker->department(2))
                 ->setEnabled($faker->boolean(70))
                 ->setHidden($faker->boolean(20));
+
+            if($faker->boolean(60)) {
+                $category->setDefaultVatRate($faker->randomElement($this->vatRates));
+            }
+
             $manager->persist($category);
 
+            $subcategoryVatRateFactor = $category->getDefaultVatRate() ? 20 : 70;
             for($sc = 1; $sc <= mt_rand(1, 3); $sc++) {
                 $subcategory = new Category();
                 $subcategory->setName($faker->department(2))
                     ->setEnabled($faker->boolean(90))
                     ->setHidden($faker->boolean(20))
                     ->setParent($category);
+
+                if($faker->boolean($subcategoryVatRateFactor)) {
+                    $subcategory->setDefaultVatRate($faker->randomElement($this->vatRates));
+                }
+
                 $manager->persist($subcategory);
             }
 
@@ -530,6 +559,9 @@ class AppFixtures extends Fixture
 
         /** @var PaymentMethod[] $paymentMethods */
         $paymentMethods = [];
+        /** @var PaymentMethod[] $availablePaymentMethods */
+        $availablePaymentMethods = [];
+
         for($pm = 1; $pm <= 10; $pm++) {
             $paymentMethod = new PaymentMethod();
             $paymentMethod->setName(substr($faker->sentence(2, false), 0, -1))
@@ -539,6 +571,10 @@ class AppFixtures extends Fixture
             $manager->persist($paymentMethod);
 
             $paymentMethods[] = $paymentMethod;
+
+            if($paymentMethod->isEnabled() && $paymentMethod->isSelectable() && $paymentMethod->getType() === PaymentMethodTypeEnum::AUTOMATIC) {
+                $availablePaymentMethods[] = $paymentMethod;
+            }
         }
 
         // Flush before creating products, because we're checking constraints based on ID comparisons for some properties
@@ -555,22 +591,14 @@ class AppFixtures extends Fixture
         /** @var string[] $productNames */
         $productNames = [];
         for($p = 1; $p <= 200; $p++) {
-            $basePrice = $faker->boolean(10) ? 0 : mt_rand(500, 5000);
-
-            $price = $basePrice > 1000 && $faker->boolean(30) ?
-                $basePrice * (1 - mt_rand(10, 50) / 100) :
-                $basePrice;
-
             $amount = $faker->boolean() ? -1 : mt_rand(0,10);
 
             /** @var Delivery[] $deliveriesForVirtualProducts */
             $deliveriesForVirtualProducts = array_filter($deliveries, fn($delivery) => $delivery->getType() !== DeliveryTypeEnum::PHYSICAL);
 
-            $publicDiscountText = $basePrice === $price ? "" : substr($faker->sentence(4), 0, -1);
-
             $i = 0;
             while($i < 100) {
-                $productName = $faker->productName;
+                $productName = $faker->productName();
                 if(!array_search($productName, $productNames)) {
                     $productNames[] = $productName;
                     break;
@@ -582,14 +610,10 @@ class AppFixtures extends Fixture
                 ->setEnabled($faker->boolean(75))
                 ->setBuyable($faker->boolean(70))
                 ->setHidden($faker->boolean(30))
-                ->setBasePriceHT($basePrice)
-                ->setBasePriceTTC($basePrice)
-                ->setPriceHT($price)
-                ->setPriceTTC($price)
-                ->setQuantity($amount)
-                ->setDelivery($amount === -1 || $price === 0 ? $faker->randomElement($deliveriesForVirtualProducts) : $faker->randomElement($deliveries))
+                ->setPriceTTC($faker->boolean(10) ? 0 : mt_rand(500, 5000))
+                ->setQuantity($amount);
+            $product->setDelivery($amount === -1 || $product->getPriceTTC() === 0 ? $faker->randomElement($deliveriesForVirtualProducts) : $faker->randomElement($deliveries))
                 ->setReference($faker->regexify("[A-Z]{2}[A-Z0-9]{2}"))
-                ->setPublicDiscountText($publicDiscountText)
                 ->setDescription($faker->text(1800))
                 ->setImage(explode("/id/", $faker->imageUrl(512, 512, true))[1]) // TODO: Corps à ajouter sur les URL en test (à mettre dans une variable env) : https://picsum.photos/id/
                 ->setSubtitle($faker->boolean() ? str_replace(".", "", substr($faker->sentence(4, false), 0, 48))  : "");
@@ -603,8 +627,6 @@ class AppFixtures extends Fixture
 
                 $product->addAttribute($attributeValue);
             }
-
-            $manager->persist($product);
 
             /** @var Category[] $productCategories */
             $productCategories = [];
@@ -628,27 +650,400 @@ class AppFixtures extends Fixture
             $isFirstCategory = true;
             foreach($productCategories as $category) {
                 $productCategory = new ProductCategory();
+
                 $productCategory->setProduct($product)
                     ->setCategory($category);
 
                 if($isFirstCategory) {
                     $productCategory->setMain(true);
+
+                    if(!$category->getApplicableVatRate() || $faker->boolean(10)) {
+                        $product->setVatRate($faker->randomElement($this->vatRates));
+                    }
+
                     $isFirstCategory = false;
                 }
 
                 $manager->persist($productCategory);
             }
 
+            $manager->persist($product);
+
             $products[] = $product;
         }
 
+        // Flush after creating products, because we're filtering products with repository after that point
+        //$manager->flush();
+
+        /** @var Product[] $products_notPhysical */
+        $products_notPhysical = array_filter($products, fn(Product $product) => $product->getDelivery()->getType() !== DeliveryTypeEnum::PHYSICAL);
+        /*$products_notPhysical = $this->em->createQueryBuilder()
+            ->select("p")
+            ->where("p.delivery <> ?1")
+            ->from("App:Shop\Product", "p")
+            ->setParameter(1, DeliveryTypeEnum::PHYSICAL)
+            ->getQuery()
+            ->getResult();*/
+
         // ----- Order ----- \\
 
-//        /** @var Order[] $orders */
-//        for($o = 1; $o <= 100; $o++) {
-//            $order = new Order();
-//            $order->setReference(mt_rand(100000000, 999999999));
-//        }
+        /** @var Order[] $orders */
+        $orders = [];
+
+        /** @var Order[] $ordersUserCartMatch */
+        $ordersUserCartMatch = [];
+
+        for($o = 1; $o <= 100; $o++) {
+            /** @var User $user */
+            $user = $faker->randomElement($users);
+
+            $order = new Order();
+            $order->setReference(mt_rand(100000000, 999999999))
+                ->setUser($user)
+                ->setCreatedAt(DateTimeImmutable::createFromMutable($faker->dateTimeBetween($user->getFirstLogin(), $user->getStats()->getLastLoginAt())))
+                ->setAddressLineStreet($user->getSettings()->getAddressLineStreet())
+                ->setAddressLineBuildingInside($user->getSettings()->getAddressLineBuildingInside())
+                ->setAddressLineBuildingOutside($user->getSettings()->getAddressLineBuildingOutside())
+                ->setAddressLineHamlet($user->getSettings()->getAddressLineHamlet())
+                ->setAddressCommunePostalData($user->getSettings()->getAddressCommunePostalData())
+                ->setAddressCountry($user->getSettings()->getAddressCountry());
+
+            // --- Managing statuses | Start ---
+
+            $order->addStatusToHistory(
+                (new OrderStatus())->setStatus(OrderStatusEnum::CART_CURRENT)
+                    ->setDate($order->getCreatedAt())
+            );
+
+            $finalStatusArray = [
+                0 => OrderStatusEnum::CART_CURRENT,
+                1 => OrderStatusEnum::CART_ABORTED,
+                2 => OrderStatusEnum::CART_ABORTED,
+                3 => OrderStatusEnum::PAYMENT_PENDING,
+                4 => OrderStatusEnum::ORDER_CONFIRMED,
+                5 => OrderStatusEnum::ORDER_CONFIRMED,
+                6 => OrderStatusEnum::ORDER_CONFIRMED,
+                7 => OrderStatusEnum::ORDER_EXPIRED,
+                8 => OrderStatusEnum::ORDER_ABORTED,
+                9 => OrderStatusEnum::ORDER_CANCELLED
+            ];
+
+            $finalStatus = $finalStatusArray[$faker->randomDigit()];
+            $nextStatusDate = $faker->dateTimeBetween(DateTime::createFromImmutable($order->getCreatedAt()), $user->getStats()->getLastLoginAt());
+
+            if($finalStatus === OrderStatusEnum::CART_CURRENT) {
+                if(isset($ordersUserCartMatch[$user->getId()])) {
+                    continue;
+                }
+
+                $nextStatusDate = DateTime::createFromImmutable($order->getCreatedAt());
+                $order->setUpdatedAt($nextStatusDate);
+                $ordersUserCartMatch[$user->getId()] = $order;
+            } elseif($finalStatus === OrderStatusEnum::CART_ABORTED) {
+                $order->addStatusToHistory(
+                    (new OrderStatus())->setStatus(OrderStatusEnum::CART_ABORTED)
+                        ->setDate($nextStatusDate)
+                );
+            } else {
+                $order->addStatusToHistory(
+                    (new OrderStatus())->setStatus(OrderStatusEnum::PAYMENT_PENDING)
+                        ->setDate($nextStatusDate)
+                );
+
+                $nextStatusDate = $faker->dateTimeBetween($nextStatusDate, $user->getStats()->getLastLoginAt());
+
+                switch($finalStatus) {
+                    case OrderStatusEnum::ORDER_CONFIRMED:
+                    case OrderStatusEnum::ORDER_CANCELLED:
+                        $order->addStatusToHistory(
+                            (new OrderStatus())->setStatus(OrderStatusEnum::ORDER_CONFIRMED)
+                                ->setDate($nextStatusDate)
+                        );
+
+                        if($finalStatus === OrderStatusEnum::ORDER_CANCELLED) {
+                            $nextStatusDate = $faker->dateTimeBetween($nextStatusDate, $user->getStats()->getLastLoginAt());
+
+                            $order->addStatusToHistory(
+                                (new OrderStatus())->setStatus(OrderStatusEnum::ORDER_CANCELLED)
+                                    ->setDate($nextStatusDate)
+                            );
+                        }
+
+                        break;
+                    case OrderStatusEnum::ORDER_EXPIRED:
+                        $order->addStatusToHistory(
+                            (new OrderStatus())->setStatus(OrderStatusEnum::ORDER_EXPIRED)
+                                ->setDate($nextStatusDate)
+                        );
+                        break;
+                    default:
+                        $order->addStatusToHistory(
+                            (new OrderStatus())->setStatus(OrderStatusEnum::ORDER_ABORTED)
+                                ->setDate($nextStatusDate)
+                        );
+                        break;
+                }
+            }
+
+            // --- Managing statuses | End ---
+
+            $mostRecentItemUpdateDate = null;
+            $orderNbProducts = $faker->boolean(80) ? 1 : ($faker->boolean(75) ? 2 : 3);
+            for($i = 1; $i <= $orderNbProducts; $i++) {
+                /** @var Product $product */
+                $product = $faker->randomElement($products_notPhysical);
+
+                $item = new OrderItem();
+                $item->setProduct($product)
+                    ->setQuantity(1)
+                    ->setDelivery($product->getDelivery())
+                    ->setCreatedAt($order->getCreatedAt());
+
+                // --- Managing statuses | Start ---
+
+                /*if(is_null($order->getStatusDetails(OrderStatusEnum::CART_CURRENT))) {
+                    var_dump($order->getStatusHistory()->findFirst(fn(int $key, Status $status) => $status->getStatus() === OrderStatusEnum::CART_CURRENT));
+                    var_dump($order->getStatusHistory()->getValues());
+                    exit;
+                }*/
+
+                $item->addStatusToHistory(
+                    (new OrderItemStatus())->setStatus(OrderItemStatusEnum::CART_CURRENT)
+                        ->setDate($order->getStatusDetails(OrderStatusEnum::CART_CURRENT)->getDate())
+                );
+
+                if($finalStatus === OrderStatusEnum::CART_ABORTED) {
+                    $item->addStatusToHistory(
+                        (new OrderItemStatus())->setStatus(OrderItemStatusEnum::CART_ABORTED)
+                            ->setDate($order->getStatusDetails(OrderStatusEnum::CART_ABORTED)->getDate())
+                    );
+                } elseif($finalStatus !== OrderStatusEnum::CART_CURRENT) {
+                    $item->addStatusToHistory(
+                        (new OrderItemStatus())->setStatus(OrderItemStatusEnum::PAYMENT_PENDING)
+                            ->setDate($order->getStatusDetails(OrderStatusEnum::PAYMENT_PENDING)->getDate())
+                    );
+
+                    if($finalStatus === OrderStatusEnum::ORDER_EXPIRED) {
+                        $item->addStatusToHistory(
+                            (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_CANCELLED)
+                                ->setDate($order->getStatusDetails(OrderStatusEnum::ORDER_EXPIRED)->getDate())
+                        );
+                    } elseif($finalStatus === OrderStatusEnum::ORDER_ABORTED) {
+                        $item->addStatusToHistory(
+                            (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_CANCELLED)
+                                ->setDate($order->getStatusDetails(OrderStatusEnum::ORDER_ABORTED)->getDate())
+                        );
+                    } elseif($finalStatus !== OrderStatusEnum::PAYMENT_PENDING) {
+                        // ORDER_CONFIRMED ou ORDER_CANCELLED
+                        // TODO: uniquement produits virtuels pour le moment, produits physiques à faire
+
+                        $maxNextStatusDateWhenNotYetCancelled = $finalStatus === OrderStatusEnum::ORDER_CONFIRMED ? $user->getStats()->getLastLoginAt() : DateTime::createFromImmutable($order->getStatusDetails(OrderStatusEnum::ORDER_CANCELLED)->getDate());
+                        $orderConfirmedStatusDate = DateTime::createFromImmutable($order->getStatusDetails(OrderStatusEnum::ORDER_CONFIRMED)->getDate());
+                        $nextItemStatusDate = $orderConfirmedStatusDate;
+
+                        switch($item->getDelivery()->getType()) {
+                            case DeliveryTypeEnum::AUTOMATIC:
+                                if($finalStatus !== OrderStatusEnum::ORDER_CANCELLED && $faker->boolean(10)) {
+                                    // Si la livraison automatique échoue
+                                    $item->addStatusToHistory(
+                                        (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_REQUEST_SENT)
+                                            ->setDate($nextItemStatusDate)
+                                    );
+
+                                    if($finalStatus !== OrderStatusEnum::ORDER_CANCELLED && $faker->boolean(20)) {
+                                        break;
+                                    }
+
+                                    $nextItemStatusDate = $faker->dateTimeBetween($orderConfirmedStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                    $item->addStatusToHistory(
+                                        (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_ACTIVATED)
+                                            ->setDate($nextItemStatusDate)
+                                    );
+                                } else {
+                                    $item->addStatusToHistory(
+                                        (new OrderItemStatus())->setStatus($faker->boolean() ? OrderItemStatusEnum::ITEM_ACTIVATED : OrderItemStatusEnum::DELIVERY_DONE)
+                                            ->setDate($nextItemStatusDate)
+                                    );
+                                }
+
+                                break;
+                            case DeliveryTypeEnum::MANUAL_SHOP:
+                                $nextItemStatusDate = $faker->dateTimeBetween($orderConfirmedStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $item->addStatusToHistory(
+                                    (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_REQUEST_SENT)
+                                        ->setDate($nextItemStatusDate)
+                                );
+
+                                if($finalStatus !== OrderStatusEnum::ORDER_CANCELLED && $faker->boolean(20)) {
+                                    break;
+                                }
+
+                                $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $item->addStatusToHistory(
+                                    (new OrderItemStatus())->setStatus($faker->boolean() ? OrderItemStatusEnum::ITEM_ACTIVATED : OrderItemStatusEnum::DELIVERY_DONE)
+                                        ->setDate($nextItemStatusDate)
+                                );
+
+                                break;
+                            case DeliveryTypeEnum::MANUAL_USER:
+                                $item->addStatusToHistory(
+                                    (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_ACTIVATION_PENDING)
+                                        ->setDate($nextItemStatusDate)
+                                );
+
+                                if($faker->boolean(20)) {
+                                    break;
+                                }
+
+                                $itemActivationStatus = $faker->boolean(80) ? OrderItemStatusEnum::ITEM_ACTIVATED : ($faker->boolean() ? OrderItemStatusEnum::ITEM_PARTIALLY_ACTIVATED_DISCORD : OrderItemStatusEnum::ITEM_PARTIALLY_ACTIVATED_MINECRAFT);
+                                $nextItemStatusDate = $faker->dateTimeBetween($orderConfirmedStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $item->addStatusToHistory(
+                                    (new OrderItemStatus())->setStatus($itemActivationStatus)
+                                        ->setDate($nextItemStatusDate)
+                                );
+
+                                if($itemActivationStatus === OrderItemStatusEnum::ITEM_ACTIVATED || $faker->boolean()) {
+                                    break;
+                                }
+
+                                $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $item->addStatusToHistory(
+                                    (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_ACTIVATED)
+                                        ->setDate($nextItemStatusDate)
+                                );
+
+                                break;
+                            default:
+                                throw new Exception("Ce type de livraison n'est pas encore pris en charge");
+                        }
+
+                        $cancellationPath = false;
+                        if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(30)) {
+                            // Retours et rétractations
+                            $withdrawalAndReturnStatusArray = [
+                                "withdrawal" => [
+                                    "sent" => OrderItemStatusEnum::WITHDRAWAL_REQUEST_SENT,
+                                    "accepted" => OrderItemStatusEnum::WITHDRAWAL_REQUEST_ACCEPTED,
+                                    "rejected" => OrderItemStatusEnum::WITHDRAWAL_REQUEST_REJECTED
+                                ],
+                                "return" => [
+                                    "sent" => OrderItemStatusEnum::RETURN_REQUEST_SENT,
+                                    "accepted" => OrderItemStatusEnum::RETURN_REQUEST_ACCEPTED,
+                                    "rejected" => OrderItemStatusEnum::RETURN_REQUEST_REJECTED
+                                ]
+                            ];
+
+                            /** @var OrderItemStatusEnum[] $requestStatusArray */
+                            $requestStatusArray = $withdrawalAndReturnStatusArray[$faker->boolean(70) ? "withdrawal" : "return"];
+
+                            $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                            $item->addStatusToHistory(
+                                (new OrderItemStatus())->setStatus($requestStatusArray["sent"])
+                                    ->setDate($nextItemStatusDate)
+                            );
+
+                            if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(80)) {
+                                $requestStatusAnswer =
+                                    $finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(80)
+                                    ? $requestStatusArray["accepted"]
+                                    : $requestStatusArray["rejected"]
+                                ;
+
+                                $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $item->addStatusToHistory(
+                                    (new OrderItemStatus())->setStatus($requestStatusAnswer)
+                                        ->setDate($nextItemStatusDate)
+                                );
+
+                                if($requestStatusAnswer === $requestStatusArray["accepted"]) {
+                                    $cancellationPath = true;
+                                }
+                            }
+                        }
+
+                        if($cancellationPath) {
+                            $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                            $item->addStatusToHistory(
+                                (new OrderItemStatus())->setStatus(OrderItemStatusEnum::RETURN_PENDING)
+                                    ->setDate($nextItemStatusDate)
+                            );
+
+                            $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                            $item->addStatusToHistory(
+                                (new OrderItemStatus())->setStatus(OrderItemStatusEnum::RETURN_IN_PROGRESS)
+                                    ->setDate($nextItemStatusDate)
+                            );
+
+                            if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(90)) {
+                                $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $item->addStatusToHistory(
+                                    (new OrderItemStatus())->setStatus(OrderItemStatusEnum::RETURN_RECEIVED)
+                                        ->setDate($nextItemStatusDate)
+                                );
+
+                                $returnStatus = ($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(70))
+                                    ? OrderItemStatusEnum::RETURN_CONFIRMED
+                                    : OrderItemStatusEnum::RETURN_NON_COMPLIANT
+                                ;
+                                $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $item->addStatusToHistory(
+                                    (new OrderItemStatus())->setStatus($returnStatus)
+                                        ->setDate($nextItemStatusDate)
+                                );
+
+                                if($returnStatus === OrderItemStatusEnum::RETURN_CONFIRMED) {
+                                    $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                    $item->addStatusToHistory(
+                                        (new OrderItemStatus())->setStatus(OrderItemStatusEnum::REFUND_PENDING)
+                                            ->setDate($nextItemStatusDate)
+                                    );
+
+                                    if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(75)) {
+                                        $nextItemStatusDate = $order->getCurrentStatus()->getDate();
+
+                                        $item->addStatusToHistory(
+                                            (new OrderItemStatus())->setStatus(OrderItemStatusEnum::REFUND_DONE)
+                                                ->setDate($nextItemStatusDate)
+                                        );
+
+                                        $item->addStatusToHistory(
+                                            (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_CANCELLED)
+                                                ->setDate($nextItemStatusDate)
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // --- Managing statuses | End ---
+
+                $item->setUpdatedAt($item->getCurrentStatus()->getDate());
+                if(is_null($mostRecentItemUpdateDate) || $mostRecentItemUpdateDate > $item->getCurrentStatus()->getDate()) {
+                    $mostRecentItemUpdateDate = $item->getCurrentStatus()->getDate();
+                }
+
+                // TODO : discount
+
+                $order->addItem($item);
+                $manager->persist($item);
+            }
+
+            $order->setUpdatedAt($mostRecentItemUpdateDate);
+            $order->updateTotals();
+
+            // TODO : payments / discounts globaux
+
+            /*if($order->getTotalAmountTTC() === 0) {
+
+            }*/
+
+            // TODO: finir les propriétés de commande
+
+            $orders[] = $order;
+            $manager->persist($order);
+        }
 
         $manager->flush();
     }

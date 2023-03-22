@@ -4,6 +4,7 @@ namespace App\Entity\Shop\Order;
 
 use App\Repository\Shop\Order\StatusRepository;
 use DateTimeImmutable;
+use DateTimeInterface;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -75,8 +76,13 @@ class Status
         return $this->date;
     }
 
-    public function setDate(DateTimeImmutable $date): self
+    // Argument type changed from DateTimeImmutable to DateTimeInterface to allow simpler sets, especially in fixtures
+    public function setDate(DateTimeInterface $date): self
     {
+        if(get_class($date) !== "DateTimeImmutable") {
+            $date = DateTimeImmutable::createFromMutable($date);
+        }
+
         $this->date = $date;
 
         return $this;
