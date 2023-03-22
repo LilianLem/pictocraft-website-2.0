@@ -11,6 +11,8 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
+// TODO: prevent adding a discount applying on an order with fixedDiscount set (VAT problem)
+// TODO: prevent adding a discount with fixedDiscount & percentageDiscount set at the same time
 #[ORM\Entity(repositoryClass: DiscountRepository::class)]
 #[ORM\Table(name: 'shop_discount')]
 #[UniqueEntity("code", message: "Ce code est déjà utilisé")]

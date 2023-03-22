@@ -11,6 +11,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Exception;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -71,28 +72,9 @@ class Product
     private ?int $quantity = null;
 
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix de base HT ne peut pas être négatif")]
-    #[Assert\NotBlank]
-    private ?int $basePriceHT = null;
-
-    #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix de base TTC ne peut pas être négatif")]
-    #[Assert\NotBlank]
-    private ?int $basePriceTTC = null;
-
-    #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix HT ne peut pas être négatif")]
-    #[Assert\NotBlank]
-    private ?int $priceHT = null;
-
-    #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
     #[Assert\PositiveOrZero(message: "Le prix TTC ne peut pas être négatif")]
     #[Assert\NotBlank]
     private ?int $priceTTC = null;
-
-    #[ORM\Column(length: 64, nullable: true)]
-    #[Assert\Length(max: 64, maxMessage: "Le texte ne doit pas dépasser {{ limit }} caractères")]
-    private ?string $publicDiscountText = null;
 
     #[ORM\ManyToOne(inversedBy: 'products')]
     #[ORM\JoinColumn(nullable: false)]
@@ -121,9 +103,6 @@ class Product
         $this->hidden = false;
         $this->enabled = false;
         $this->quantity = 0;
-        $this->basePriceHT = 0;
-        $this->basePriceTTC = 0;
-        $this->priceHT = 0;
         $this->priceTTC = 0;
         $this->productCategories = new ArrayCollection();
         $this->attributes = new ArrayCollection();
@@ -255,41 +234,21 @@ class Product
         return $this;
     }
 
-    public function getBasePriceHT(): ?int
-    {
-        return $this->basePriceHT;
-    }
-
-    public function setBasePriceHT(int $basePriceHT): self
-    {
-        $this->basePriceHT = $basePriceHT;
-
-        return $this;
-    }
-
-    public function getBasePriceTTC(): ?int
-    {
-        return $this->basePriceTTC;
-    }
-
-    public function setBasePriceTTC(int $basePriceTTC): self
-    {
-        $this->basePriceTTC = $basePriceTTC;
-
-        return $this;
-    }
-
     public function getPriceHT(): ?int
     {
-        return $this->priceHT;
+        if(is_null($this->getApplicableVatRate())) {
+            throw new Exception("Impossible de calculer le prix HT car aucun taux de TVA n'est relié au produit ou à sa catégorie.");
+        }
+
+        return $this->getApplicableVatRate()->getCurrentValue()->getHTPriceFromTTC($this->priceTTC);
     }
 
-    public function setPriceHT(int $priceHT): self
-    {
-        $this->priceHT = $priceHT;
-
-        return $this;
-    }
+//    public function setPriceHT(int $priceHT): self
+//    {
+//        $this->priceHT = $priceHT;
+//
+//        return $this;
+//    }
 
     public function getPriceTTC(): ?int
     {
@@ -299,18 +258,6 @@ class Product
     public function setPriceTTC(int $priceTTC): self
     {
         $this->priceTTC = $priceTTC;
-
-        return $this;
-    }
-
-    public function getPublicDiscountText(): ?string
-    {
-        return $this->publicDiscountText;
-    }
-
-    public function setPublicDiscountText(?string $publicDiscountText): self
-    {
-        $this->publicDiscountText = $publicDiscountText;
 
         return $this;
     }

@@ -9,11 +9,14 @@ use App\Entity\Shop\GameKey\GameKey;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\Product;
 use App\Repository\Shop\OrderItem\OrderItemRepository;
+use DateTime;
+use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Exception;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -42,25 +45,19 @@ class OrderItem
     #[Assert\NotBlank]
     private ?Product $product = null;
 
-    #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix de base HT unitaire ne peut pas être négatif")]
-    #[Assert\NotBlank]
-    private ?int $basePriceHT = null;
-
-    #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
+    #[ORM\Column(name: "base_price_ttc_per_unit", options: ["default" => 0, "unsigned" => true])]
     #[Assert\PositiveOrZero(message: "Le prix de base TTC unitaire ne peut pas être négatif")]
     #[Assert\NotBlank]
-    private ?int $basePriceTTC = null;
+    private ?int $basePriceTTCPerUnit = null;
 
+    // Final price (multiplied by quantity, with applied item discounts)
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix HT unitaire ne peut pas être négatif")]
+    #[Assert\PositiveOrZero(message: "Le prix TTC total ne peut pas être négatif")]
     #[Assert\NotBlank]
-    private ?int $priceHT = null;
+    private ?int $totalPriceTTC = null;
 
-    #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix TTC unitaire ne peut pas être négatif")]
-    #[Assert\NotBlank]
-    private ?int $priceTTC = null;
+    #[Assert\PositiveOrZero]
+    private ?int $discountsTotal = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255, maxMessage: "Le commentaire ne doit pas dépasser {{ limit }} caractères")]
@@ -70,6 +67,10 @@ class OrderItem
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
     private ?Delivery $delivery = null;
+
+    #[ORM\Column(options: ["default" => "CURRENT_TIMESTAMP"])]
+    #[Assert\DateTime]
+    private ?DateTimeImmutable $createdAt = null;
 
     // TODO : vérifier si la mise à jour de la date est fonctionnelle, càd seulement quand des choses sont modifiées
     #[ORM\Column(type: Types::DATETIME_MUTABLE, options: ["default" => "CURRENT_TIMESTAMP"], columnDefinition: "DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL on update CURRENT_TIMESTAMP")]
@@ -106,10 +107,8 @@ class OrderItem
 
     public function __construct()
     {
-        $this->basePriceHT = 0;
-        $this->basePriceTTC = 0;
-        $this->priceHT = 0;
-        $this->priceTTC = 0;
+        $this->basePriceTTCPerUnit = 0;
+        $this->totalPriceTTC = 0;
         $this->quantity = 1;
         $this->gameKeys = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
@@ -142,56 +141,118 @@ class OrderItem
     {
         $this->product = $product;
 
-        return $this;
-    }
+        if(!$this->getBasePriceTTCPerUnit()) {
+            $this->setBasePriceTTCPerUnit($product->getPriceTTC());
+        }
 
-    public function getBasePriceHT(): ?int
-    {
-        return $this->basePriceHT;
-    }
-
-    public function setBasePriceHT(int $basePriceHT): self
-    {
-        $this->basePriceHT = $basePriceHT;
+        if($this->getQuantity()) {
+            $this->updateTotalPriceTTC();
+        }
 
         return $this;
     }
 
-    public function getBasePriceTTC(): ?int
+    public function getBasePriceHTPerUnit(): ?int
     {
-        return $this->basePriceTTC;
+        if(is_null($this->getBasePriceTTCPerUnit())) {
+            throw new Exception("Le prix de base TTC unitaire doit d'abord être défini avant de calculer le prix de base HT unitaire");
+        }
+
+        if(is_null($this->getProduct())) {
+            throw new Exception("Impossible de calculer le prix HT unitaire car aucun produit n'est défini.");
+        }
+
+        if(is_null($this->getProduct()->getApplicableVatRate())) {
+            throw new Exception("Impossible de calculer le prix HT unitaire car aucun taux de TVA n'est relié au produit ou à sa catégorie.");
+        }
+
+        return $this->getProduct()->getApplicableVatRate()->getValueAtDate($this->getCreatedAt() ?? new DateTime())->getHTPriceFromTTC($this->getBasePriceTTCPerUnit());
     }
 
-    public function setBasePriceTTC(int $basePriceTTC): self
+    public function getBasePriceTTCPerUnit(): ?int
     {
-        $this->basePriceTTC = $basePriceTTC;
+        return $this->basePriceTTCPerUnit;
+    }
+
+    public function setBasePriceTTCPerUnit(int $basePriceTTCPerUnit): self
+    {
+        $this->basePriceTTCPerUnit = $basePriceTTCPerUnit;
+
+        if($this->getProduct() && $this->getQuantity()) {
+            $this->updateTotalPriceTTC();
+        }
 
         return $this;
     }
 
-    public function getPriceHT(): ?int
+    public function getTotalPriceHT(): ?int
     {
-        return $this->priceHT;
+        if(is_null($this->getBasePriceTTCPerUnit())) {
+            throw new Exception("Le prix de base TTC unitaire doit d'abord être défini avant d'obtenir le prix HT total");
+        }
+
+        if(is_null($this->getQuantity())) {
+            throw new Exception("La quantité doit d'abord être définie avant de mettre à jour le prix HT total");
+        }
+
+        if(is_null($this->getProduct()->getApplicableVatRate())) {
+            throw new Exception("Impossible de calculer le prix HT total car aucun taux de TVA n'est relié au produit ou à sa catégorie.");
+        }
+
+        $totalPriceHT = $this->getBasePriceHTPerUnit() * $this->getQuantity() - $this->getProduct()->getApplicableVatRate()->getValueAtDate($this->getCreatedAt() ?? new DateTime())->getHTPriceFromTTC($this->getDiscountsTotal());
+
+        // Not supposed to happen
+        if($totalPriceHT < 0) $totalPriceHT = 0;
+
+        return $totalPriceHT;
     }
 
-    public function setPriceHT(int $priceHT): self
+    public function getTotalPriceTTC(): ?int
     {
-        $this->priceHT = $priceHT;
+        return $this->totalPriceTTC;
+    }
+
+//    public function setTotalPriceTTC(int $totalPriceTTC): self
+//    {
+//        $this->totalPriceTTC = $totalPriceTTC;
+//
+//        return $this;
+//    }
+
+    // Order update needed separately after prices update
+    public function updateTotalPriceTTC(): self
+    {
+        if(is_null($this->getBasePriceTTCPerUnit())) {
+            throw new Exception("Le prix de base TTC unitaire doit d'abord être défini avant de mettre à jour le prix TTC total");
+        }
+
+        if(is_null($this->getQuantity())) {
+            throw new Exception("La quantité doit d'abord être définie avant de mettre à jour le prix TTC total");
+        }
+
+        $this->totalPriceTTC = $this->getBasePriceTTCPerUnit() * $this->getQuantity() - $this->getDiscountsTotal();
+
+        // Not supposed to happen
+        if($this->totalPriceTTC < 0) $this->totalPriceTTC = 0;
 
         return $this;
     }
 
-    public function getPriceTTC(): ?int
+    public function getDiscountsTotal(): ?int
     {
-        return $this->priceTTC;
+        $this->discountsTotal = $this->getAppliedDiscounts()->isEmpty()
+            ? 0
+            : $this->getAppliedDiscounts()->reduce(fn(int $accumulator, AppliedDiscount $ad): int => $accumulator + $ad->getAmount(), initial: 0);
+
+        return $this->discountsTotal;
     }
 
-    public function setPriceTTC(int $priceTTC): self
-    {
-        $this->priceTTC = $priceTTC;
-
-        return $this;
-    }
+//    public function setDiscountsTotal(int $discountsTotal): self
+//    {
+//        $this->discountsTotal = $discountsTotal;
+//
+//        return $this;
+//    }
 
     public function getComment(): ?string
     {
@@ -217,6 +278,18 @@ class OrderItem
         return $this;
     }
 
+    public function getCreatedAt(): ?DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(DateTimeImmutable $createdAt): self
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
     public function getUpdatedAt(): ?DateTimeInterface
     {
         return $this->updatedAt;
@@ -237,6 +310,12 @@ class OrderItem
     public function setQuantity(int $quantity): self
     {
         $this->quantity = $quantity;
+
+        if($this->getProduct()) {
+            $this->updateTotalPriceTTC();
+        }
+
+        // TODO: update discounts amounts and eligibilities accordingly
 
         return $this;
     }
@@ -293,6 +372,14 @@ class OrderItem
 
     public function addAppliedDiscount(AppliedDiscount $appliedDiscount): self
     {
+        if(is_null($this->getBasePriceTTCPerUnit())) {
+            throw new Exception("Le prix de base TTC doit d'abord être défini avant de pouvoir appliquer des réductions");
+        }
+
+        if(is_null($this->getQuantity())) {
+            throw new Exception("La quantité doit d'abord être définie avant de pouvoir appliquer des réductions");
+        }
+
         if (!$this->appliedDiscounts->contains($appliedDiscount)) {
             $this->appliedDiscounts->add($appliedDiscount);
             $appliedDiscount->setOrderItem($this);

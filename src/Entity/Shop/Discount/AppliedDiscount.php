@@ -27,6 +27,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 )]
 class AppliedDiscount
 {
+    // TODO: find a way to prevent creating an AppliedDiscount instance by itself, because it needs to be done directly in linked Order or OrderItem
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(options: ["unsigned" => true])]
@@ -53,6 +55,7 @@ class AppliedDiscount
     #[Assert\LessThanOrEqual(100, message: "Le pourcentage de réduction ne peut pas dépasser 100%")]
     private ?int $percentageDiscount = null;
 
+    // Total discount amount (item quantity is used if >1)
     #[ORM\Column(options: ["unsigned" => true])]
     #[Assert\NotBlank]
     #[Assert\Positive(message: "Le montant de la réduction doit être supérieur à 0€")]

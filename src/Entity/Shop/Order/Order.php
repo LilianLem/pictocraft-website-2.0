@@ -17,6 +17,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Exception;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -42,14 +43,16 @@ class Order
     private ?User $user = null;
 
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix HT ne peut pas être négatif")]
-    #[Assert\NotBlank]
-    private ?int $priceHT = null;
+    #[Assert\PositiveOrZero(message: "Le sous-total TTC des articles ne peut pas être négatif")]
+    private ?int $baseSubtotalTTC = null;
+
+    #[Assert\PositiveOrZero]
+    private ?int $discountsSubtotal = null;
 
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "Le prix TTC ne peut pas être négatif")]
+    #[Assert\PositiveOrZero(message: "Le montant total TTC ne peut pas être négatif")]
     #[Assert\NotBlank]
-    private ?int $priceTTC = null;
+    private ?int $totalAmountTTC = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255, maxMessage: "Le commentaire ne doit pas dépasser {{ limit }} caractères")]
@@ -106,8 +109,8 @@ class Order
 
     public function __construct()
     {
-        $this->priceHT = 0;
-        $this->priceTTC = 0;
+        $this->baseSubtotalTTC = 0;
+        $this->totalAmountTTC = 0;
         $this->items = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
         $this->statusHistory = new ArrayCollection();
@@ -143,39 +146,94 @@ class Order
         return $this;
     }
 
-    public function getPriceHT(): ?int
+    public function getBaseSubtotalHT(): ?int
     {
-        return $this->priceHT;
+        return $this->getItems()->isEmpty()
+            ? 0
+            : $this->getItems()->reduce(fn(int $accumulator, OrderItem $item): int => $accumulator + ($item->getBasePriceHTPerUnit() * $item->getQuantity()), initial: 0)
+        ;
     }
 
-    public function setPriceHT(int $priceHT): self
+    public function getBaseSubtotalTTC(): ?int
     {
-        $this->priceHT = $priceHT;
+        return $this->baseSubtotalTTC;
+    }
+
+//    public function setBaseSubtotalTTC(int $baseSubtotalTTC): self
+//    {
+//        $this->baseSubtotalTTC = $baseSubtotalTTC;
+//
+//        return $this;
+//    }
+
+    public function updateBaseSubtotalTTC(): self
+    {
+        $this->baseSubtotalTTC = $this->getItems()->isEmpty()
+            ? 0
+            : $this->getItems()->reduce(fn(int $accumulator, OrderItem $item): int => $accumulator + ($item->getBasePriceTTCPerUnit() * $item->getQuantity()), initial: 0)
+        ;
 
         return $this;
     }
 
-    public function getPriceTTC(): ?int
+    public function getDiscountsSubtotal(): ?int
     {
-        return $this->priceTTC;
+        if($this->getItems()->isEmpty()) {
+            $this->discountsSubtotal = 0;
+            return $this->discountsSubtotal;
+        }
+
+        $this->discountsSubtotal = $this->getItems()->reduce(fn(int $accumulator, OrderItem $item): int => $accumulator + $item->getDiscountsTotal(), initial: 0);
+
+        if(!$this->appliedDiscounts->isEmpty()) {
+            $this->discountsSubtotal += $this->getAppliedDiscounts()->reduce(fn(int $accumulator, AppliedDiscount $ad): int => $accumulator + $ad->getAmount(), initial: 0);
+        }
+
+        return $this->discountsSubtotal;
     }
 
-    public function setPriceTTC(int $priceTTC): self
+//    public function setDiscountsSubtotal(int $discountsSubtotal): self
+//    {
+//        $this->discountsSubtotal = $discountsSubtotal;
+//
+//        return $this;
+//    }
+
+    public function getTotalAmountHT(): ?int
     {
-        $this->priceTTC = $priceTTC;
+        $totalAmountHT = $this->getBaseSubtotalHT() - $this->getDiscountsSubtotal();
+
+        // Not supposed to happen
+        if($totalAmountHT < 0) $totalAmountHT = 0;
+
+        return $totalAmountHT;
+    }
+
+    public function getTotalAmountTTC(): ?int
+    {
+        return $this->totalAmountTTC;
+    }
+
+//    public function setTotalAmountTTC(int $totalAmountTTC): self
+//    {
+//        $this->totalAmountTTC = $totalAmountTTC;
+//
+//        return $this;
+//    }
+
+    public function updateTotalAmountTTC(): self
+    {
+        $this->totalAmountTTC = $this->getBaseSubtotalTTC() - $this->getDiscountsSubtotal();
+
+        // Not supposed to happen
+        if($this->totalAmountTTC < 0) $this->totalAmountTTC = 0;
 
         return $this;
     }
 
-    public function getPaymentMethod(): ?PaymentMethod
+    public function updateTotals(): self
     {
-        return $this->paymentMethod;
-    }
-
-    public function setPaymentMethod(?PaymentMethod $paymentMethod): self
-    {
-        $this->paymentMethod = $paymentMethod;
-
+        $this->updateBaseSubtotalTTC()->updateTotalAmountTTC();
         return $this;
     }
 
@@ -230,6 +288,8 @@ class Order
             $item->setOrder($this);
         }
 
+        $this->updateTotals();
+
         return $this;
     }
 
@@ -242,6 +302,7 @@ class Order
             }
         }
 
+        $this->updateTotals();
 
         return $this;
     }
