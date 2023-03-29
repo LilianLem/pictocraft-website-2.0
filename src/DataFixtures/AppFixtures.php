@@ -430,7 +430,7 @@ class AppFixtures extends Fixture
 
             $manager->persist($category);
 
-            $subcategoryVatRateFactor = $category->getDefaultVatRate() ? 20 : 70;
+            $subcategoryOwnVatRateProbability = $category->getDefaultVatRate() ? 20 : 80;
             for($sc = 1; $sc <= mt_rand(1, 3); $sc++) {
                 $subcategory = new Category();
                 $subcategory->setName($faker->department(2))
@@ -438,7 +438,7 @@ class AppFixtures extends Fixture
                     ->setHidden($faker->boolean(20))
                     ->setParent($category);
 
-                if($faker->boolean($subcategoryVatRateFactor)) {
+                if($faker->boolean($subcategoryOwnVatRateProbability)) {
                     $subcategory->setDefaultVatRate($faker->randomElement($this->vatRates));
                 }
 
@@ -596,8 +596,7 @@ class AppFixtures extends Fixture
             foreach($productCategories as $category) {
                 $productCategory = new ProductCategory();
 
-                $productCategory->setProduct($product)
-                    ->setCategory($category);
+                $productCategory->setCategory($category);
 
                 if($isFirstCategory) {
                     $productCategory->setMain(true);
@@ -609,6 +608,8 @@ class AppFixtures extends Fixture
                     $isFirstCategory = false;
                 }
 
+                $product->addProductCategory($productCategory);
+
                 $manager->persist($productCategory);
             }
 
@@ -617,7 +618,7 @@ class AppFixtures extends Fixture
             $products[] = $product;
         }
 
-        // Flush after creating products, because we're filtering products with repository after that point
+        // Flush after creating products, because it's needed for relation purposes on order processing
         //$manager->flush();
 
         $products_notPhysical = array_filter($products, fn(Product $product) => $product->getDelivery()->getType() !== DeliveryTypeEnum::PHYSICAL);
@@ -726,9 +727,23 @@ class AppFixtures extends Fixture
 
             $mostRecentItemUpdateDate = null;
             $orderNbProducts = $faker->boolean(80) ? 1 : ($faker->boolean(75) ? 2 : 3);
-            for($i = 1; $i <= $orderNbProducts; $i++) {
-                /** @var Product $product */
-                $product = $faker->randomElement($products_notPhysical);
+            for($p = 1; $p <= $orderNbProducts; $p++) {
+                $productValid = false;
+                $i = 0;
+                while(!$productValid && $i < 30) {
+                    $i++;
+
+                    /** @var Product $product */
+                    $product = $faker->randomElement($products_notPhysical);
+
+                    if(!$order->getItems()->exists(fn(int $key, OrderItem $item) => $product->getId() === $item->getProduct()->getId())) {
+                        $productValid = true;
+                    }
+                }
+
+                if(!$productValid) {
+                    continue;
+                }
 
                 $item = new OrderItem();
                 $item->setProductAndBasePriceTtcPerUnit($product)
@@ -959,6 +974,11 @@ class AppFixtures extends Fixture
 
                 $order->addItem($item);
                 $manager->persist($item);
+            }
+
+            if($order->getItems()->isEmpty()) {
+                unset($order);
+                continue;
             }
 
             $order->setUpdatedAt($mostRecentItemUpdateDate);

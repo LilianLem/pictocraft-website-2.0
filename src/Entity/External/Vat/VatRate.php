@@ -31,10 +31,10 @@ class VatRate
     #[ORM\OrderBy(["endAt" => "ASC"])]
     private Collection $valueHistory;
 
-    #[ORM\OneToMany(mappedBy: 'vatRate', targetEntity: Product::class)]
+    #[ORM\OneToMany(mappedBy: 'vatRate', targetEntity: Product::class, cascade: ["persist", "remove"])]
     private Collection $products;
 
-    #[ORM\OneToMany(mappedBy: 'defaultVatRate', targetEntity: Category::class)]
+    #[ORM\OneToMany(mappedBy: 'defaultVatRate', targetEntity: Category::class, cascade: ["persist", "remove"])]
     private Collection $productCategories;
 
     public function __construct()
