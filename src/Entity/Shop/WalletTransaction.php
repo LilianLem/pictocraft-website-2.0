@@ -3,7 +3,7 @@
 namespace App\Entity\Shop;
 
 use App\Entity\Core\User\User;
-use App\Entity\Shop\Payment\Payment;
+use App\Entity\Shop\Discount\Discount;
 use App\Repository\Shop\WalletTransactionRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
@@ -22,9 +22,6 @@ class WalletTransaction
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
     private ?User $user = null;
-
-    #[ORM\OneToOne(inversedBy: 'walletTransaction', cascade: ['persist', 'remove'])]
-    private ?Payment $payment = null;
 
     #[ORM\Column(length: 64, nullable: true)]
     #[Assert\Length(max: 64, maxMessage: "La description ne doit pas dépasser {{ limit }} caractères")]
@@ -45,6 +42,9 @@ class WalletTransaction
     #[Assert\NotBlank]
     private ?DateTimeImmutable $date = null;
 
+    #[ORM\OneToOne(inversedBy: 'walletTransaction', cascade: ['persist', 'remove'])]
+    private ?Discount $generatedDiscount = null;
+
     public function __construct()
     {
         $this->balance = 0;
@@ -63,18 +63,6 @@ class WalletTransaction
     public function setUser(?User $user): self
     {
         $this->user = $user;
-
-        return $this;
-    }
-
-    public function getPayment(): ?Payment
-    {
-        return $this->payment;
-    }
-
-    public function setPayment(?Payment $payment): self
-    {
-        $this->payment = $payment;
 
         return $this;
     }
@@ -123,6 +111,18 @@ class WalletTransaction
     public function setDate(DateTimeImmutable $date): self
     {
         $this->date = $date;
+
+        return $this;
+    }
+
+    public function getGeneratedDiscount(): ?Discount
+    {
+        return $this->generatedDiscount;
+    }
+
+    public function setGeneratedDiscount(?Discount $generatedDiscount): self
+    {
+        $this->generatedDiscount = $generatedDiscount;
 
         return $this;
     }

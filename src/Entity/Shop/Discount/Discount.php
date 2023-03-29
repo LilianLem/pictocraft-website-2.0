@@ -2,6 +2,7 @@
 
 namespace App\Entity\Shop\Discount;
 
+use App\Entity\Shop\WalletTransaction;
 use App\Repository\Shop\Discount\DiscountRepository;
 use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -11,7 +12,6 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
-// TODO: prevent adding a discount applying on an order with fixedDiscount set (VAT problem)
 // TODO: prevent adding a discount with fixedDiscount & percentageDiscount set at the same time
 #[ORM\Entity(repositoryClass: DiscountRepository::class)]
 #[ORM\Table(name: 'shop_discount')]
@@ -86,6 +86,9 @@ class Discount
 
     #[ORM\OneToMany(mappedBy: 'discount', targetEntity: AppliedDiscount::class)]
     private Collection $appliedDiscounts;
+
+    #[ORM\OneToOne(mappedBy: 'generatedDiscount', cascade: ['persist', 'remove'])]
+    private ?WalletTransaction $walletTransaction = null;
 
     public function __construct()
     {
@@ -303,5 +306,27 @@ class Discount
     public function getAppliedDiscounts(): Collection
     {
         return $this->appliedDiscounts;
+    }
+
+    public function getWalletTransaction(): ?WalletTransaction
+    {
+        return $this->walletTransaction;
+    }
+
+    public function setWalletTransaction(?WalletTransaction $walletTransaction): self
+    {
+        // unset the owning side of the relation if necessary
+        if ($walletTransaction === null && $this->walletTransaction !== null) {
+            $this->walletTransaction->setGeneratedDiscount(null);
+        }
+
+        // set the owning side of the relation if necessary
+        if ($walletTransaction !== null && $walletTransaction->getGeneratedDiscount() !== $this) {
+            $walletTransaction->setGeneratedDiscount($this);
+        }
+
+        $this->walletTransaction = $walletTransaction;
+
+        return $this;
     }
 }

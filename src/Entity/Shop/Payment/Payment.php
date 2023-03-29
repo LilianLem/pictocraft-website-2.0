@@ -3,7 +3,6 @@
 namespace App\Entity\Shop\Payment;
 
 use App\Entity\Shop\Order\Order;
-use App\Entity\Shop\WalletTransaction;
 use App\Repository\Shop\Payment\PaymentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -44,9 +43,6 @@ class Payment
     #[ORM\Column(length: 128, nullable: true)]
     #[Assert\Length(max: 128, maxMessage: "Le token de paiement ne doit pas dépasser {{ limit }} caractères")]
     private ?string $token = null;
-
-    #[ORM\OneToOne(mappedBy: 'payment', cascade: ['persist', 'remove'])]
-    private ?WalletTransaction $walletTransaction = null;
 
     #[ORM\OneToMany(mappedBy: 'payment', targetEntity: Status::class, orphanRemoval: true)]
     private Collection $statusHistory;
@@ -105,28 +101,6 @@ class Payment
     public function setToken(?string $token): self
     {
         $this->token = $token;
-
-        return $this;
-    }
-
-    public function getWalletTransaction(): ?WalletTransaction
-    {
-        return $this->walletTransaction;
-    }
-
-    public function setWalletTransaction(?WalletTransaction $walletTransaction): self
-    {
-        // unset the owning side of the relation if necessary
-        if ($walletTransaction === null && $this->walletTransaction !== null) {
-            $this->walletTransaction->setPayment(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($walletTransaction !== null && $walletTransaction->getPayment() !== $this) {
-            $walletTransaction->setPayment($this);
-        }
-
-        $this->walletTransaction = $walletTransaction;
 
         return $this;
     }
