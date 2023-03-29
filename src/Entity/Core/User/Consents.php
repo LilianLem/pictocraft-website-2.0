@@ -4,7 +4,6 @@ namespace App\Entity\Core\User;
 
 use App\Repository\Core\User\ConsentsRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ConsentsRepository::class)]

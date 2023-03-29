@@ -2,7 +2,6 @@
 
 namespace App\Entity\Shop\Payment;
 
-use App\Entity\Shop\Order\Order;
 use App\Repository\Shop\Payment\PaymentMethodRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -44,7 +43,6 @@ class PaymentMethod
     {
         $this->enabled = false;
         $this->selectable = false;
-        $this->orders = new ArrayCollection();
         $this->payments = new ArrayCollection();
     }
 
@@ -97,36 +95,6 @@ class PaymentMethod
     public function setSelectable(bool $selectable): self
     {
         $this->selectable = $selectable;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, Order>
-     */
-    public function getOrders(): Collection
-    {
-        return $this->orders;
-    }
-
-    public function addOrder(Order $order): self
-    {
-        if (!$this->orders->contains($order)) {
-            $this->orders->add($order);
-            $order->setPaymentMethod($this);
-        }
-
-        return $this;
-    }
-
-    public function removeOrder(Order $order): self
-    {
-        if ($this->orders->removeElement($order)) {
-            // set the owning side to null (unless already changed)
-            if ($order->getPaymentMethod() === $this) {
-                $order->setPaymentMethod(null);
-            }
-        }
 
         return $this;
     }

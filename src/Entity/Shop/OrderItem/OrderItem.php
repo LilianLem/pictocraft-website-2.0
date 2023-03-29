@@ -48,16 +48,13 @@ class OrderItem
     #[ORM\Column(name: "base_price_ttc_per_unit", options: ["default" => 0, "unsigned" => true])]
     #[Assert\PositiveOrZero(message: "Le prix de base TTC unitaire ne peut pas être négatif")]
     #[Assert\NotBlank]
-    private ?int $basePriceTTCPerUnit = null;
+    private ?int $basePriceTtcPerUnit = null;
 
     // Final price (multiplied by quantity, with applied item discounts)
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
     #[Assert\PositiveOrZero(message: "Le prix TTC total ne peut pas être négatif")]
     #[Assert\NotBlank]
-    private ?int $totalPriceTTC = null;
-
-    #[Assert\PositiveOrZero]
-    private ?int $discountsTotal = null;
+    private ?int $totalAmountTtc = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255, maxMessage: "Le commentaire ne doit pas dépasser {{ limit }} caractères")]
@@ -107,8 +104,8 @@ class OrderItem
 
     public function __construct()
     {
-        $this->basePriceTTCPerUnit = 0;
-        $this->totalPriceTTC = 0;
+        $this->basePriceTtcPerUnit = 0;
+        $this->totalAmountTtc = 0;
         $this->quantity = 1;
         $this->gameKeys = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
@@ -137,24 +134,24 @@ class OrderItem
         return $this->product;
     }
 
-    public function setProduct(?Product $product): self
+    public function setProduct(Product $product): self
     {
         $this->product = $product;
 
-        if(!$this->getBasePriceTTCPerUnit()) {
-            $this->setBasePriceTTCPerUnit($product->getPriceTTC());
+        if(!$this->getBasePriceTtcPerUnit()) {
+            $this->setBasePriceTtcPerUnit($product->getPriceTtc());
         }
 
         if($this->getQuantity()) {
-            $this->updateTotalPriceTTC();
+            $this->updateTotalAmountTtc();
         }
 
         return $this;
     }
 
-    public function getBasePriceHTPerUnit(): ?int
+    public function getBasePriceHtPerUnit(): ?int
     {
-        if(is_null($this->getBasePriceTTCPerUnit())) {
+        if(is_null($this->getBasePriceTtcPerUnit())) {
             throw new Exception("Le prix de base TTC unitaire doit d'abord être défini avant de calculer le prix de base HT unitaire");
         }
 
@@ -166,85 +163,84 @@ class OrderItem
             throw new Exception("Impossible de calculer le prix HT unitaire car aucun taux de TVA n'est relié au produit ou à sa catégorie.");
         }
 
-        return $this->getProduct()->getApplicableVatRate()->getValueAtDate($this->getCreatedAt() ?? new DateTime())->getHTPriceFromTTC($this->getBasePriceTTCPerUnit());
+        return $this->getProduct()->getApplicableVatRate()->getValueAtDate($this->getCreatedAt() ?? new DateTime())->getHtPriceFromTtc($this->getBasePriceTtcPerUnit());
     }
 
-    public function getBasePriceTTCPerUnit(): ?int
+    public function getBasePriceTtcPerUnit(): ?int
     {
-        return $this->basePriceTTCPerUnit;
+        return $this->basePriceTtcPerUnit;
     }
 
-    public function setBasePriceTTCPerUnit(int $basePriceTTCPerUnit): self
+    public function setBasePriceTtcPerUnit(int $basePriceTtcPerUnit): self
     {
-        $this->basePriceTTCPerUnit = $basePriceTTCPerUnit;
+        $this->basePriceTtcPerUnit = $basePriceTtcPerUnit;
 
         if($this->getProduct() && $this->getQuantity()) {
-            $this->updateTotalPriceTTC();
+            $this->updateTotalAmountTtc();
         }
 
         return $this;
     }
 
-    public function getTotalPriceHT(): ?int
+    public function getTotalAmountHt(): ?int
     {
-        if(is_null($this->getBasePriceTTCPerUnit())) {
-            throw new Exception("Le prix de base TTC unitaire doit d'abord être défini avant d'obtenir le prix HT total");
+        if(is_null($this->getBasePriceTtcPerUnit())) {
+            throw new Exception("Le prix de base TTC unitaire doit d'abord être défini avant d'obtenir le prix HT total.");
         }
 
         if(is_null($this->getQuantity())) {
-            throw new Exception("La quantité doit d'abord être définie avant de mettre à jour le prix HT total");
+            throw new Exception("La quantité doit d'abord être définie avant de mettre à jour le prix HT total.");
         }
 
         if(is_null($this->getProduct()->getApplicableVatRate())) {
             throw new Exception("Impossible de calculer le prix HT total car aucun taux de TVA n'est relié au produit ou à sa catégorie.");
         }
 
-        $totalPriceHT = $this->getBasePriceHTPerUnit() * $this->getQuantity() - $this->getProduct()->getApplicableVatRate()->getValueAtDate($this->getCreatedAt() ?? new DateTime())->getHTPriceFromTTC($this->getDiscountsTotal());
+        $totalAmountHt = $this->getBasePriceHtPerUnit() * $this->getQuantity() - $this->getProduct()->getApplicableVatRate()->getValueAtDate($this->getCreatedAt() ?? new DateTime())->getHtPriceFromTtc($this->getDiscountsTotal());
 
         // Not supposed to happen
-        if($totalPriceHT < 0) $totalPriceHT = 0;
+        if($totalAmountHt < 0) $totalAmountHt = 0;
 
-        return $totalPriceHT;
+        return $totalAmountHt;
     }
 
-    public function getTotalPriceTTC(): ?int
+    public function getTotalAmountTtc(): ?int
     {
-        return $this->totalPriceTTC;
+        return $this->totalAmountTtc;
     }
 
-//    public function setTotalPriceTTC(int $totalPriceTTC): self
+//    public function setTotalAmountTtc(int $totalAmountTtc): self
 //    {
-//        $this->totalPriceTTC = $totalPriceTTC;
+//        $this->totalAmountTtc = $totalAmountTtc;
 //
 //        return $this;
 //    }
 
     // Order update needed separately after prices update
-    public function updateTotalPriceTTC(): self
+    public function updateTotalAmountTtc(): self
     {
         if(is_null($this->getBasePriceTTCPerUnit())) {
-            throw new Exception("Le prix de base TTC unitaire doit d'abord être défini avant de mettre à jour le prix TTC total");
+            throw new Exception("Le prix de base TTC unitaire doit d'abord être défini avant de mettre à jour le prix TTC total.");
         }
 
         if(is_null($this->getQuantity())) {
-            throw new Exception("La quantité doit d'abord être définie avant de mettre à jour le prix TTC total");
+            throw new Exception("La quantité doit d'abord être définie avant de mettre à jour le prix TTC total.");
         }
 
-        $this->totalPriceTTC = $this->getBasePriceTTCPerUnit() * $this->getQuantity() - $this->getDiscountsTotal();
+        $this->totalAmountTtc = $this->getBasePriceTtcPerUnit() * $this->getQuantity() - $this->getDiscountsTotal();
 
         // Not supposed to happen
-        if($this->totalPriceTTC < 0) $this->totalPriceTTC = 0;
+        if($this->totalAmountTtc < 0) $this->totalAmountTtc = 0;
 
         return $this;
     }
 
     public function getDiscountsTotal(): ?int
     {
-        $this->discountsTotal = $this->getAppliedDiscounts()->isEmpty()
+        return $this->getAppliedDiscounts()->isEmpty()
             ? 0
-            : $this->getAppliedDiscounts()->reduce(fn(int $accumulator, AppliedDiscount $ad): int => $accumulator + $ad->getAmount(), initial: 0);
-
-        return $this->discountsTotal;
+            : $this->getAppliedDiscounts()->reduce(fn(int $accumulator, AppliedDiscount $ad): int => $accumulator + $ad->getAmount(), initial: 0)
+        ;
     }
 
 //    public function setDiscountsTotal(int $discountsTotal): self
@@ -312,7 +308,7 @@ class OrderItem
         $this->quantity = $quantity;
 
         if($this->getProduct()) {
-            $this->updateTotalPriceTTC();
+            $this->updateTotalAmountTtc();
         }
 
         // TODO: update discounts amounts and eligibilities accordingly
@@ -372,7 +368,7 @@ class OrderItem
 
     public function addAppliedDiscount(AppliedDiscount $appliedDiscount): self
     {
-        if(is_null($this->getBasePriceTTCPerUnit())) {
+        if(is_null($this->getBasePriceTtcPerUnit())) {
             throw new Exception("Le prix de base TTC doit d'abord être défini avant de pouvoir appliquer des réductions");
         }
 
@@ -446,13 +442,19 @@ class OrderItem
     public function getCurrentStatus(): ?Status
     {
         $statusHistory = $this->getStatusHistory();
-        return $statusHistory?->last() ?? null;
+        return $statusHistory->isEmpty()
+            ? null
+            : $statusHistory->last()
+        ;
     }
 
     public function getStatusDetails(StatusEnum $status): ?Status
     {
         $statusHistory = $this->getStatusHistory();
-        return $statusHistory?->findFirst(fn(int $key, Status $statusToCompare) => $statusToCompare->getStatus() === $status) ?? null;
+        return $statusHistory->isEmpty()
+            ? null
+            : $statusHistory->findFirst(fn(int $key, Status $statusToCompare) => $statusToCompare->getStatus() === $status)
+        ;
     }
 
     public function getFollowedBy(): ?self

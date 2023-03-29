@@ -31,7 +31,7 @@ class Status
 
     #[ORM\Column(type: 'order_status_enum')]
     #[Assert\NotBlank]
-    private $status = null;
+    private ?StatusEnum $status = null;
 
     #[ORM\Column]
     #[Assert\DateTime]

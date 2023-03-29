@@ -14,16 +14,16 @@ class SlugListener
         $this->slugger = $slugger;
     }
 
-    private function process(object $entity) {
+    private function process(object $entity): void {
         if(!property_exists($entity, "slug")) {
             return;
         }
 
         $entityClass = get_class($entity);
 
-        if(property_exists($entityClass, "slugProperty")) {
+        if(method_exists($entityClass, "getSlugProperty")) {
             $propertyGetter = "get".ucfirst($entityClass::getSlugProperty());
-        } elseif(property_exists($entity, "name")) {
+        } elseif(method_exists($entity, "getName")) {
             $propertyGetter = "getName";
         } else {
             return;

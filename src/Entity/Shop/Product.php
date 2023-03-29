@@ -74,7 +74,7 @@ class Product
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
     #[Assert\PositiveOrZero(message: "Le prix TTC ne peut pas être négatif")]
     #[Assert\NotBlank]
-    private ?int $priceTTC = null;
+    private ?int $priceTtc = null;
 
     #[ORM\ManyToOne(inversedBy: 'products')]
     #[ORM\JoinColumn(nullable: false)]
@@ -103,7 +103,7 @@ class Product
         $this->hidden = false;
         $this->enabled = false;
         $this->quantity = 0;
-        $this->priceTTC = 0;
+        $this->priceTtc = 0;
         $this->productCategories = new ArrayCollection();
         $this->attributes = new ArrayCollection();
         $this->orderItems = new ArrayCollection();
@@ -234,30 +234,30 @@ class Product
         return $this;
     }
 
-    public function getPriceHT(): ?int
+    public function getPriceHt(): ?int
     {
         if(is_null($this->getApplicableVatRate())) {
             throw new Exception("Impossible de calculer le prix HT car aucun taux de TVA n'est relié au produit ou à sa catégorie.");
         }
 
-        return $this->getApplicableVatRate()->getCurrentValue()->getHTPriceFromTTC($this->priceTTC);
+        return $this->getApplicableVatRate()->getCurrentValue()->getHtPriceFromTtc($this->priceTtc);
     }
 
-//    public function setPriceHT(int $priceHT): self
+//    public function setPriceHt(int $priceHt): self
 //    {
-//        $this->priceHT = $priceHT;
+//        $this->priceHt = $priceHt;
 //
 //        return $this;
 //    }
 
-    public function getPriceTTC(): ?int
+    public function getPriceTtc(): ?int
     {
-        return $this->priceTTC;
+        return $this->priceTtc;
     }
 
-    public function setPriceTTC(int $priceTTC): self
+    public function setPriceTtc(int $priceTtc): self
     {
-        $this->priceTTC = $priceTTC;
+        $this->priceTtc = $priceTtc;
 
         return $this;
     }

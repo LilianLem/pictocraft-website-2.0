@@ -4,7 +4,6 @@ namespace App\Entity\External\Vat;
 
 use App\Repository\External\Vat\ValueRepository;
 use DateTimeImmutable;
-use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -87,8 +86,8 @@ class Value
         return $this;
     }
 
-    public function getHTPriceFromTTC(int $priceTTC): int
+    public function getHtPriceFromTtc(int $priceTtc): int
     {
-        return round($priceTTC / $this->getMultiplierValue());
+        return round($priceTtc / $this->getMultiplierValue());
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Entity\Shop;
 
 use App\Entity\Core\User\User;
-use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\Payment\Payment;
 use App\Repository\Shop\WalletTransactionRepository;
 use DateTimeImmutable;

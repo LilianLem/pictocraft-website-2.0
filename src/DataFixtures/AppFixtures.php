@@ -18,12 +18,9 @@ use App\Entity\Shop\Attribute\Attribute;
 use App\Entity\Shop\Attribute\Value;
 use App\Entity\Shop\Category;
 use App\Entity\Shop\Delivery\Delivery;
-use App\Entity\Shop\Delivery\TypeEnum;
 use App\Entity\Shop\Delivery\TypeEnum as DeliveryTypeEnum;
 use App\Entity\Shop\Order\Order;
-use App\Entity\Shop\Order\Status;
 use App\Entity\Shop\Order\Status as OrderStatus;
-use App\Entity\Shop\Order\StatusEnum;
 use App\Entity\Shop\Order\StatusEnum as OrderStatusEnum;
 use App\Entity\Shop\OrderItem\OrderItem;
 use App\Entity\Shop\OrderItem\Status as OrderItemStatus;
@@ -44,7 +41,6 @@ use Carbon\Carbon;
 use DateTime;
 use DateTimeImmutable;
 use Doctrine\Bundle\FixturesBundle\Fixture;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectManager;
 use Exception;
@@ -82,7 +78,6 @@ class AppFixtures extends Fixture
         $this->passwordHasher = $passwordHasher;
         $this->countryRepository = $countryRepository;
         $this->communePostalDataRepository = $communePostalDataRepository;
-        $this->vatRateRepository = $vatRateRepository;
         $this->departements = $departementRepository->findAll();
         $this->france = $this->countryRepository->findOneBy(["isoCode_alpha2" => "FR"]);
         $this->addressLineBuildingInsideCollection = ["RDC", "1er étage", "2ème étage", "3ème étage"];
@@ -226,7 +221,7 @@ class AppFixtures extends Fixture
         $generatedUsernames = [];
         /** @var string[] $generatedEmails */
         $generatedEmails = [];
-        /** @var int[] $specialRolesCount */
+
         $specialRolesCount = ["ROLE_DISCORD_ASSISTANT" => 0,"ROLE_MINECRAFT_MANAGER" => 0];
 
         /** @var User[] $users */
@@ -298,61 +293,23 @@ class AppFixtures extends Fixture
             $lastName_lower = str_replace(" ", "", mb_strtolower($user->getLastName()));
             $departement_lower = mb_strtolower(ltrim($user->getSettings()->getDepartement()->getInseeCode(), "0"));
 
-            //TODO : à factoriser dans une fonction utilitaire dédiée
-            $firstName_lower = str_replace(["à","â","ä"],"a", $firstName_lower);
-            $firstName_lower = str_replace(["é","è","ê","ë"],"e", $firstName_lower);
-            $firstName_lower = str_replace(["î","ï"],"i", $firstName_lower);
-            $firstName_lower = str_replace(["ô","ö"],"o", $firstName_lower);
-            $firstName_lower = str_replace(["ù","ü"],"u", $firstName_lower);
-            $firstName_lower = str_replace(["ÿ","ç"], ["y","c"], $firstName_lower);
-            $firstName_lower = str_replace(["À","Â","Ä"],"A", $firstName_lower);
-            $firstName_lower = str_replace(["É","È","Ê","Ë"],"E", $firstName_lower);
-            $firstName_lower = str_replace(["Î","Ï"],"I", $firstName_lower);
-            $firstName_lower = str_replace(["Ô","Ö"],"O", $firstName_lower);
-            $firstName_lower = str_replace(["Ù","Ü"],"U", $firstName_lower);
-            $firstName_lower = str_replace(["Ÿ","Ç"], ["Y", "C"], $firstName_lower);
-
-            $lastName_lower = str_replace(["à","â","ä"],"a", $lastName_lower);
-            $lastName_lower = str_replace(["é","è","ê","ë"],"e", $lastName_lower);
-            $lastName_lower = str_replace(["î","ï"],"i", $lastName_lower);
-            $lastName_lower = str_replace(["ô","ö"],"o", $lastName_lower);
-            $lastName_lower = str_replace(["ù","ü"],"u", $lastName_lower);
-            $lastName_lower = str_replace(["ÿ","ç"], ["y","c"], $lastName_lower);
-            $lastName_lower = str_replace(["À","Â","Ä"],"A", $lastName_lower);
-            $lastName_lower = str_replace(["É","È","Ê","Ë"],"E", $lastName_lower);
-            $lastName_lower = str_replace(["Î","Ï"],"I", $lastName_lower);
-            $lastName_lower = str_replace(["Ô","Ö"],"O", $lastName_lower);
-            $lastName_lower = str_replace(["Ù","Ü"],"U", $lastName_lower);
-            $lastName_lower = str_replace(["Ÿ","Ç"], ["Y", "C"], $lastName_lower);
+            $firstName_lower = $this->removeAccentsOnLetters($firstName_lower);
+            $lastName_lower = $this->removeAccentsOnLetters($lastName_lower);
 
             $i = 0;
             while(empty($user->getUsername()) || $i < 50) {
                 /** @var int $usernameTemplate */
                 $usernameTemplate = array_rand($usernameTemplates);
 
-                switch($usernameTemplate) {
-                    case 0:
-                        $username = $firstName_lower."_".$lastName_lower;
-                        break;
-                    case 1:
-                        $username = $firstName_lower[0]."_".$lastName_lower;
-                        break;
-                    case 2:
-                        $username = $firstName_lower[0].$lastName_lower;
-                        break;
-                    case 3:
-                        $username = $firstName_lower.$departement_lower;
-                        break;
-                    case 4:
-                        $username = $firstName_lower[0].$lastName_lower.$departement_lower;
-                        break;
-                    case 5:
-                        $username = $faker->sentence(2, false).$departement_lower;
-                        break;
-                    default:
-                        $username = $faker->sentence(2, false);
-                        break;
-                }
+                $username = match($usernameTemplate) {
+                    0 => $firstName_lower."_".$lastName_lower,
+                    1 => $firstName_lower[0]."_".$lastName_lower,
+                    2 => $firstName_lower[0].$lastName_lower,
+                    3 => $firstName_lower.$departement_lower,
+                    4 => $firstName_lower[0].$lastName_lower.$departement_lower,
+                    5 => $faker->sentence(2, false).$departement_lower,
+                    default => $faker->sentence(2, false)
+                };
 
                 if(!array_search($username, $generatedUsernames)) {
                     $user->setUsername($username);
@@ -366,29 +323,15 @@ class AppFixtures extends Fixture
                 /** @var int $emailTemplate */
                 $emailTemplate = array_rand($emailTemplates);
 
-                switch($emailTemplate) {
-                    case 1:
-                        $email = $firstName_lower[0].".".$lastName_lower;
-                        break;
-                    case 2:
-                        $email = $firstName_lower[0].$lastName_lower;
-                        break;
-                    case 3:
-                        $email = "$lastName_lower.$firstName_lower";
-                        break;
-                    case 4:
-                        $email = "$firstName_lower.$lastName_lower$departement_lower";
-                        break;
-                    case 5:
-                        $email = $firstName_lower.$lastName_lower.$departement_lower;
-                        break;
-                    case 6:
-                        $email = $firstName_lower.$user->getSettings()->getAddressCommunePostalData()->getPostalCode();
-                        break;
-                    default:
-                        $email = "$firstName_lower.$lastName_lower";
-                        break;
-                }
+                $email = match($emailTemplate) {
+                    1 => $firstName_lower[0].".".$lastName_lower,
+                    2 => $firstName_lower[0].$lastName_lower,
+                    3 => "$lastName_lower.$firstName_lower",
+                    4 => "$firstName_lower.$lastName_lower$departement_lower",
+                    5 => $firstName_lower.$lastName_lower.$departement_lower,
+                    6 => $firstName_lower.$user->getSettings()->getAddressCommunePostalData()->getPostalCode(),
+                    default => "$firstName_lower.$lastName_lower",
+                };
 
                 $providerDiscriminator = str_pad(strval(mt_rand(1, 30)), 2, "0", STR_PAD_LEFT);
                 $email .= "@pictocraft-fake$providerDiscriminator.fr";
@@ -593,16 +536,18 @@ class AppFixtures extends Fixture
         for($p = 1; $p <= 200; $p++) {
             $amount = $faker->boolean() ? -1 : mt_rand(0,10);
 
-            /** @var Delivery[] $deliveriesForVirtualProducts */
             $deliveriesForVirtualProducts = array_filter($deliveries, fn($delivery) => $delivery->getType() !== DeliveryTypeEnum::PHYSICAL);
 
             $i = 0;
             while($i < 100) {
                 $productName = $faker->productName();
+
                 if(!array_search($productName, $productNames)) {
                     $productNames[] = $productName;
                     break;
                 }
+
+                $i++;
             }
 
             $product = new Product();
@@ -610,9 +555,9 @@ class AppFixtures extends Fixture
                 ->setEnabled($faker->boolean(75))
                 ->setBuyable($faker->boolean(70))
                 ->setHidden($faker->boolean(30))
-                ->setPriceTTC($faker->boolean(10) ? 0 : mt_rand(500, 5000))
+                ->setPriceTtc($faker->boolean(10) ? 0 : mt_rand(500, 5000))
                 ->setQuantity($amount);
-            $product->setDelivery($amount === -1 || $product->getPriceTTC() === 0 ? $faker->randomElement($deliveriesForVirtualProducts) : $faker->randomElement($deliveries))
+            $product->setDelivery($amount === -1 || $product->getPriceTtc() === 0 ? $faker->randomElement($deliveriesForVirtualProducts) : $faker->randomElement($deliveries))
                 ->setReference($faker->regexify("[A-Z]{2}[A-Z0-9]{2}"))
                 ->setDescription($faker->text(1800))
                 ->setImage(explode("/id/", $faker->imageUrl(512, 512, true))[1]) // TODO: Corps à ajouter sur les URL en test (à mettre dans une variable env) : https://picsum.photos/id/
@@ -675,15 +620,7 @@ class AppFixtures extends Fixture
         // Flush after creating products, because we're filtering products with repository after that point
         //$manager->flush();
 
-        /** @var Product[] $products_notPhysical */
         $products_notPhysical = array_filter($products, fn(Product $product) => $product->getDelivery()->getType() !== DeliveryTypeEnum::PHYSICAL);
-        /*$products_notPhysical = $this->em->createQueryBuilder()
-            ->select("p")
-            ->where("p.delivery <> ?1")
-            ->from("App:Shop\Product", "p")
-            ->setParameter(1, DeliveryTypeEnum::PHYSICAL)
-            ->getQuery()
-            ->getResult();*/
 
         // ----- Order ----- \\
 
@@ -801,12 +738,6 @@ class AppFixtures extends Fixture
 
                 // --- Managing statuses | Start ---
 
-                /*if(is_null($order->getStatusDetails(OrderStatusEnum::CART_CURRENT))) {
-                    var_dump($order->getStatusHistory()->findFirst(fn(int $key, Status $status) => $status->getStatus() === OrderStatusEnum::CART_CURRENT));
-                    var_dump($order->getStatusHistory()->getValues());
-                    exit;
-                }*/
-
                 $item->addStatusToHistory(
                     (new OrderItemStatus())->setStatus(OrderItemStatusEnum::CART_CURRENT)
                         ->setDate($order->getStatusDetails(OrderStatusEnum::CART_CURRENT)->getDate())
@@ -850,7 +781,7 @@ class AppFixtures extends Fixture
                                             ->setDate($nextItemStatusDate)
                                     );
 
-                                    if($finalStatus !== OrderStatusEnum::ORDER_CANCELLED && $faker->boolean(20)) {
+                                    if($faker->boolean(20)) {
                                         break;
                                     }
 
@@ -1052,5 +983,22 @@ class AppFixtures extends Fixture
     {
         $randomId = mt_rand(1, $this->highestCommunePostalDataId);
         return $this->communePostalDataRepository->find($randomId);
+    }
+
+    // TODO : à déplacer dans une classe utilitaire
+    private function removeAccentsOnLetters(string $string): string
+    {
+        $string = str_replace(["à","â","ä"],"a", $string);
+        $string = str_replace(["é","è","ê","ë"],"e", $string);
+        $string = str_replace(["î","ï"],"i", $string);
+        $string = str_replace(["ô","ö"],"o", $string);
+        $string = str_replace(["ù","ü"],"u", $string);
+        $string = str_replace(["ÿ","ç"], ["y","c"], $string);
+        $string = str_replace(["À","Â","Ä"],"A", $string);
+        $string = str_replace(["É","È","Ê","Ë"],"E", $string);
+        $string = str_replace(["Î","Ï"],"I", $string);
+        $string = str_replace(["Ô","Ö"],"O", $string);
+        $string = str_replace(["Ù","Ü"],"U", $string);
+        return str_replace(["Ÿ","Ç"], ["Y", "C"], $string);
     }
 }

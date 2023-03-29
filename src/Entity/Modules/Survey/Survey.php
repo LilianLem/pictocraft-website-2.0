@@ -2,7 +2,6 @@
 
 namespace App\Entity\Modules\Survey;
 
-use App\Entity\Core\User\User;
 use App\Repository\Modules\Survey\SurveyRepository;
 use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -80,8 +79,6 @@ class Survey
         $this->questions = new ArrayCollection();
         $this->editable = false;
         $this->entries = new ArrayCollection();
-        $this->userConstraints = new ArrayCollection();
-        $this->roleConstraints = new ArrayCollection();
         $this->constraints = new ArrayCollection();
         $this->usersAnsweredAnonymously = new ArrayCollection();
     }

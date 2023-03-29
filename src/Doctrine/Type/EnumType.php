@@ -16,7 +16,7 @@ abstract class EnumType extends Type
      */
     abstract public function getEnum(): string;
 
-    public function getSQLDeclaration(array $column, AbstractPlatform $platform)
+    public function getSQLDeclaration(array $column, AbstractPlatform $platform): string
     {
         /** @var StringBackedEnum $enum */
         $enum = $this->getEnum();
@@ -27,7 +27,7 @@ abstract class EnumType extends Type
         return sprintf("ENUM(%s)", implode(", ", $cases));
     }
 
-    public function requiresSQLCommentHint(AbstractPlatform $platform)
+    public function requiresSQLCommentHint(AbstractPlatform $platform): bool
     {
         return true;
     }

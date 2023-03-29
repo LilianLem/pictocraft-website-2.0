@@ -52,9 +52,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: RoleUser::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $roles;
 
-    /**
-     * @var string The hashed password
-     */
+    // Hashed password
     #[ORM\Column]
     private ?string $password = null;
 
@@ -161,7 +159,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     // À remplir lorsque l'utilisateur est autorisé à accéder au serveur Discord, et donc à certaines fonctionnalités du site en étant connecté, en tant que visiteur
     #[ORM\Column(type: "access_grant_enum", nullable: true)]
-    private $accessGrantedType = null;
+    private ?AccessGrantEnum $accessGrantedType = null;
 
     // Remplir si $accessGrantedBy == "member"
     #[ORM\ManyToOne(targetEntity: self::class)]
@@ -182,7 +180,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->steamGames = new ArrayCollection();
         $this->divisionRoles = new ArrayCollection();
         $this->responsibleOfUsers = new ArrayCollection();
-        $this->roles_disabled = new ArrayCollection();
         $this->roles = new ArrayCollection();
         $this->surveyEntries = new ArrayCollection();
         $this->walletTransactions = new ArrayCollection();
