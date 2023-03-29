@@ -731,7 +731,7 @@ class AppFixtures extends Fixture
                 $product = $faker->randomElement($products_notPhysical);
 
                 $item = new OrderItem();
-                $item->setProduct($product)
+                $item->setProductAndBasePriceTtcPerUnit($product)
                     ->setQuantity(1)
                     ->setDelivery($product->getDelivery())
                     ->setCreatedAt($order->getCreatedAt());

@@ -138,15 +138,14 @@ class OrderItem
     {
         $this->product = $product;
 
-        if(!$this->getBasePriceTtcPerUnit()) {
-            $this->setBasePriceTtcPerUnit($product->getPriceTtc());
-        }
-
-        if($this->getQuantity()) {
-            $this->updateTotalAmountTtc();
-        }
-
         return $this;
+    }
+
+    public function setProductAndBasePriceTtcPerUnit(Product $product): self
+    {
+        $this->product = $product;
+
+        return $this->setBasePriceTtcPerUnit($product->getPriceTtc());
     }
 
     public function getBasePriceHtPerUnit(): ?int
@@ -168,6 +167,10 @@ class OrderItem
 
     public function getBasePriceTtcPerUnit(): ?int
     {
+        if(is_null($this->getProduct())) {
+            throw new Exception("Impossible d'obtenir le prix de base TTC unitaire car aucun produit n'est défini.");
+        }
+
         return $this->basePriceTtcPerUnit;
     }
 
@@ -175,7 +178,7 @@ class OrderItem
     {
         $this->basePriceTtcPerUnit = $basePriceTtcPerUnit;
 
-        if($this->getProduct() && $this->getQuantity()) {
+        if($this->getQuantity()) {
             $this->updateTotalAmountTtc();
         }
 
@@ -206,6 +209,14 @@ class OrderItem
 
     public function getTotalAmountTtc(): ?int
     {
+        if(is_null($this->getBasePriceTtcPerUnit())) {
+            throw new Exception("Le prix de base TTC unitaire doit d'abord être défini avant d'obtenir le prix TTC total.");
+        }
+
+        if(is_null($this->getQuantity())) {
+            throw new Exception("La quantité doit d'abord être définie avant d'obtenir le prix TTC total.");
+        }
+
         return $this->totalAmountTtc;
     }
 
@@ -219,7 +230,7 @@ class OrderItem
     // Order update needed separately after prices update
     public function updateTotalAmountTtc(): self
     {
-        if(is_null($this->getBasePriceTTCPerUnit())) {
+        if(is_null($this->getBasePriceTtcPerUnit())) {
             throw new Exception("Le prix de base TTC unitaire doit d'abord être défini avant de mettre à jour le prix TTC total.");
         }
 
@@ -307,7 +318,7 @@ class OrderItem
     {
         $this->quantity = $quantity;
 
-        if($this->getProduct()) {
+        if($this->getBasePriceTtcPerUnit()) {
             $this->updateTotalAmountTtc();
         }
 

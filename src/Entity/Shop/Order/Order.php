@@ -5,10 +5,13 @@ namespace App\Entity\Shop\Order;
 use App\Entity\Core\User\User;
 use App\Entity\External\Geo\Country;
 use App\Entity\External\Geo\France\CommunePostalData;
+use App\Entity\External\Vat\Value;
+use App\Entity\External\Vat\VatRate;
 use App\Entity\Shop\Discount\AppliedDiscount;
 use App\Entity\Shop\OrderItem\OrderItem;
 use App\Entity\Shop\Payment\Payment;
 use App\Repository\Shop\Order\OrderRepository;
+use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -42,6 +45,11 @@ class Order
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
     #[Assert\PositiveOrZero(message: "Le sous-total TTC des articles ne peut pas être négatif")]
     private ?int $baseSubtotalTtc = null;
+
+    #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
+    #[Assert\PositiveOrZero(message: "Le montant total HT ne peut pas être négatif")]
+    #[Assert\NotBlank]
+    private ?int $totalAmountHt = null;
 
     #[ORM\Column(options: ["default" => 0, "unsigned" => true])]
     #[Assert\PositiveOrZero(message: "Le montant total TTC ne peut pas être négatif")]
@@ -186,14 +194,63 @@ class Order
         return $discountsSubtotal;
     }
 
+    public function getDiscountsOnOrderSubtotal(): int
+    {
+        return $this->getAppliedDiscounts()->isEmpty()
+            ? 0
+            : $this->getAppliedDiscounts()->reduce(fn(int $accumulator, AppliedDiscount $ad): int => $accumulator + $ad->getAmount(), initial: 0)
+        ;
+    }
+
+    public function getTotalAmountHtBeforeOrderDiscounts(?VatRate $vatRate = null): int
+    {
+        $items = $this->getItems();
+        if($items->isEmpty()) return 0;
+
+        if($vatRate) {
+            $items = $items->filter(fn(OrderItem $item) => $item->getProduct()->getApplicableVatRate() === $vatRate);
+            if($items->isEmpty()) return 0;
+        }
+
+        return $items->reduce(fn(int $accumulator, OrderItem $item): int => $accumulator + $item->getTotalAmountHt(), initial: 0);
+    }
+
     public function getTotalAmountHt(): ?int
     {
-        $totalAmountHt = $this->getBaseSubtotalHt() - $this->getDiscountsSubtotal();
+        return $this->totalAmountHt;
+    }
+
+    public function updateTotalAmountHt(): self
+    {
+        if($this->getItems()->isEmpty()) {
+            $this->totalAmountHt = 0;
+            return $this;
+        }
+
+        if($this->getAppliedDiscounts()->isEmpty()) {
+            $this->totalAmountHt = $this->getItems()->reduce(fn(int $accumulator, OrderItem $item): int => $accumulator + $item->getTotalAmountHt(), initial: 0);
+            return $this;
+        }
+
+        $this->totalAmountHt = array_reduce($this->getTotalAmountsPerVatRate(), fn($sum, $vatRateTotals) => $sum + $vatRateTotals["ht"]);
 
         // Not supposed to happen
-        if($totalAmountHt < 0) $totalAmountHt = 0;
+        if($this->totalAmountHt < 0) $this->totalAmountHt = 0;
 
-        return $totalAmountHt;
+        return $this;
+    }
+
+    public function getTotalAmountTtcBeforeOrderDiscounts(?VatRate $vatRate = null): int
+    {
+        $items = $this->getItems();
+        if($items->isEmpty()) return 0;
+
+        if($vatRate) {
+            $items = $items->filter(fn(OrderItem $item) => $item->getProduct()->getApplicableVatRate() === $vatRate);
+            if($items->isEmpty()) return 0;
+        }
+
+        return $items->reduce(fn(int $accumulator, OrderItem $item): int => $accumulator + $item->getTotalAmountTtc(), initial: 0);
     }
 
     public function getTotalAmountTtc(): ?int
@@ -218,9 +275,66 @@ class Order
         return $this;
     }
 
+    /** @return array{
+     *     array{
+     *       vatRateValue: Value,
+     *       ttc: int,
+     *       ht: int
+     *     }
+     *  }
+     */
+    public function getTotalAmountsPerVatRate(): array
+    {
+        $orderTotal = $this->getTotalAmountTtcBeforeOrderDiscounts();
+
+        if($this->getAppliedDiscounts()->isEmpty()) {
+            $calculateWithOrderDiscounts = false;
+            $orderDiscounts = $this->getDiscountsOnOrderSubtotal();
+        } else {
+            $calculateWithOrderDiscounts = true;
+        }
+
+        $vatRates = $this->getItemsVatRates();
+        $totalsPerVatRate = [];
+
+        foreach($vatRates as $vatRate) {
+            $amount = $this->getTotalAmountTtcBeforeOrderDiscounts($vatRate);
+            if($calculateWithOrderDiscounts) $ttcTotalForVatRate = round($amount - $orderDiscounts * ($amount / $orderTotal));
+            $vatRateValue = $vatRate->getValueAtDate($this->getCreatedAt() ?? new DateTime());
+
+            $totalsPerVatRate[] = array(
+                "vatRateValue" => $vatRateValue,
+                "ttc" => $calculateWithOrderDiscounts ? $ttcTotalForVatRate : $amount,
+                "ht" => $calculateWithOrderDiscounts ? $vatRateValue->getHtPriceFromTtc($ttcTotalForVatRate) : $this->getTotalAmountHtBeforeOrderDiscounts($vatRate)
+            );
+        }
+
+        return $totalsPerVatRate;
+    }
+
     public function updateTotals(): self
     {
-        return $this->updateBaseSubtotalTtc()->updateTotalAmountTtc();
+        return $this->updateBaseSubtotalTtc()->updateTotalAmountTtc()->updateTotalAmountHt();
+    }
+
+    /**
+     * @return Collection<int, VatRate>
+     */
+    public function getItemsVatRates(): Collection
+    {
+        $items = $this->getItems();
+        if($items->isEmpty()) return new ArrayCollection();
+
+        /** @var VatRate[] $vatRates */
+        $vatRates = [];
+        foreach($items as $item) {
+            $vatRate = $item->getProduct()->getApplicableVatRate();
+            if(!isset($vatRates[$vatRate->getId()])) {
+                $vatRates[$vatRate->getId()] = $vatRate;
+            }
+        }
+
+        return new ArrayCollection($vatRates);
     }
 
     public function getComment(): ?string
