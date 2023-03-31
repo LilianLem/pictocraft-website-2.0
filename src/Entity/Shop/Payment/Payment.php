@@ -40,6 +40,10 @@ class Payment
     #[Assert\NotBlank]
     private ?int $amount = null;
 
+    #[ORM\Column(options: ["unsigned" => true], nullable: true)]
+    #[Assert\Positive(message: "Le montant remboursé doit être supérieur à 0€. Si aucun montant n'a été remboursé, laissez ce champ vide")]
+    private ?int $refundedAmount = null;
+
     #[ORM\Column(length: 128, nullable: true)]
     #[Assert\Length(max: 128, maxMessage: "Le token de paiement ne doit pas dépasser {{ limit }} caractères")]
     private ?string $token = null;
@@ -89,6 +93,18 @@ class Payment
     public function setAmount(int $amount): self
     {
         $this->amount = $amount;
+
+        return $this;
+    }
+
+    public function getRefundedAmount(): ?int
+    {
+        return $this->refundedAmount;
+    }
+
+    public function setRefundedAmount(?int $refundedAmount): self
+    {
+        $this->refundedAmount = $refundedAmount;
 
         return $this;
     }
