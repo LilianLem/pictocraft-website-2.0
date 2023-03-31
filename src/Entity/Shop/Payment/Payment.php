@@ -48,7 +48,7 @@ class Payment
     #[Assert\Length(max: 128, maxMessage: "Le token de paiement ne doit pas dépasser {{ limit }} caractères")]
     private ?string $token = null;
 
-    #[ORM\OneToMany(mappedBy: 'payment', targetEntity: Status::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'payment', targetEntity: Status::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $statusHistory;
 
     public function __construct()

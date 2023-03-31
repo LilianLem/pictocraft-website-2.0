@@ -95,6 +95,7 @@ class Product
     private ?ProductAutomaticDelivery $automaticDeliveryData = null;
 
     #[ORM\ManyToOne(inversedBy: 'products')]
+    #[ORM\JoinColumn(onDelete: "SET NULL")]
     private ?VatRate $vatRate = null;
 
     public function __construct()

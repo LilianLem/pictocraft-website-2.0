@@ -60,6 +60,7 @@ class Category
     private Collection $categoryProducts;
 
     #[ORM\ManyToOne(inversedBy: 'productCategories')]
+    #[ORM\JoinColumn(onDelete: "SET NULL")]
     private ?VatRate $defaultVatRate = null;
 
     public function __construct()

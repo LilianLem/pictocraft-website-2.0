@@ -28,6 +28,8 @@ use App\Entity\Shop\OrderItem\StatusEnum as OrderItemStatusEnum;
 use App\Entity\Shop\Payment\Payment;
 use App\Entity\Shop\Payment\PaymentMethod;
 use App\Entity\Shop\Payment\PaymentMethodTypeEnum;
+use App\Entity\Shop\Payment\Status as PaymentStatus;
+use App\Entity\Shop\Payment\StatusEnum as PaymentStatusEnum;
 use App\Entity\Shop\Product;
 use App\Entity\Shop\ProductCategory;
 use App\Repository\External\Geo\CountryRepository;
@@ -666,6 +668,7 @@ class AppFixtures extends Fixture
                 9 => OrderStatusEnum::ORDER_CANCELLED
             ];
 
+            /** @var OrderStatusEnum $finalStatus */
             $finalStatus = $finalStatusArray[$faker->randomDigit()];
             $nextStatusDate = $faker->dateTimeBetween(DateTime::createFromImmutable($order->getCreatedAt()), $user->getStats()->getLastLoginAt());
 
@@ -714,11 +717,13 @@ class AppFixtures extends Fixture
                                 ->setDate($nextStatusDate)
                         );
                         break;
-                    default:
+                    case OrderStatusEnum::ORDER_ABORTED:
                         $order->addStatusToHistory(
                             (new OrderStatus())->setStatus(OrderStatusEnum::ORDER_ABORTED)
                                 ->setDate($nextStatusDate)
                         );
+                        break;
+                    default:
                         break;
                 }
             }
@@ -945,7 +950,10 @@ class AppFixtures extends Fixture
                                     );
 
                                     if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(75)) {
-                                        $nextItemStatusDate = $order->getCurrentStatus()->getDate();
+                                        $nextItemStatusDate = ($finalStatus === OrderStatusEnum::ORDER_CANCELLED)
+                                            ? $order->getCurrentStatus()->getDate()
+                                            : $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled)
+                                        ;
 
                                         $item->addStatusToHistory(
                                             (new OrderItemStatus())->setStatus(OrderItemStatusEnum::REFUND_DONE)
@@ -984,11 +992,67 @@ class AppFixtures extends Fixture
             $order->setUpdatedAt($mostRecentItemUpdateDate);
             $order->updateTotals();
 
-            // TODO : payments / discounts globaux
+            // TODO : discounts globaux
 
-            /*if($order->getTotalAmountTTC() === 0) {
+            // TODO: plusieurs méthodes de paiement sur une même commande (non-prioritaire)
+            if($order->getTotalAmountTTC() > 0 && !in_array($finalStatus, [OrderStatusEnum::CART_CURRENT, OrderStatusEnum::CART_ABORTED])) {
+                $payment = new Payment();
+                $payment->setPaymentMethod($faker->randomElement($availablePaymentMethods))
+                    ->setAmount($order->getTotalAmountTtc());
 
-            }*/
+                $payment->addStatusToHistory(
+                    (new PaymentStatus())->setStatus(PaymentStatusEnum::PENDING)
+                        ->setDate($order->getStatusDetails(OrderStatusEnum::PAYMENT_PENDING)->getDate())
+                );
+
+                if(in_array($finalStatus, [OrderStatusEnum::ORDER_ABORTED, OrderStatusEnum::ORDER_EXPIRED])) {
+                    $payment->addStatusToHistory(
+                        (new PaymentStatus())->setStatus(PaymentStatusEnum::ABORTED)
+                            ->setDate($order->getCurrentStatus()->getDate())
+                    );
+                } elseif($order->getStatusDetails(OrderStatusEnum::ORDER_CONFIRMED)) {
+                    $payment->addStatusToHistory(
+                        (new PaymentStatus())->setStatus(PaymentStatusEnum::VALIDATED)
+                            ->setDate($order->getStatusDetails(OrderStatusEnum::ORDER_CONFIRMED)->getDate())
+                    );
+
+                    if($finalStatus === OrderStatusEnum::ORDER_CANCELLED) {
+                        // TODO: add possibility of refund on wallet
+                        $payment->addStatusToHistory(
+                            (new PaymentStatus())->setStatus(PaymentStatusEnum::REFUNDED_ENTIRELY)
+                                ->setDate($order->getStatusDetails(OrderStatusEnum::ORDER_CANCELLED)->getDate())
+                        );
+
+                        // Unrealistic data because payment platform fee may be deducted
+                        $payment->setRefundedAmount($order->getTotalAmountTtc());
+                    } else {
+                        $cancelledItems = $order->getItems()->filter(fn(OrderItem $item) => $item->getTotalAmountTtc() > 0 && $item->getCurrentStatus()->getStatus() === OrderItemStatusEnum::ITEM_CANCELLED);
+
+                        if(!$cancelledItems->isEmpty()) {
+                            $firstRefundedItemDate = null;
+                            $totalRefundedAmount = 0;
+                            /** @var OrderItem $item */
+                            foreach($cancelledItems as $item) {
+                                $totalRefundedAmount += $item->getTotalAmountTtc();
+                                if(is_null($firstRefundedItemDate) || (new Carbon($item->getCurrentStatus()->getDate()))->isBefore($firstRefundedItemDate)) {
+                                    $firstRefundedItemDate = new Carbon($item->getCurrentStatus()->getDate());
+                                }
+                            }
+
+                            // TODO: add possibility of refund on wallet
+                            $payment->addStatusToHistory(
+                                (new PaymentStatus())->setStatus(PaymentStatusEnum::REFUNDED_PARTIALLY)
+                                    ->setDate($firstRefundedItemDate->toDateTimeImmutable())
+                            );
+
+                            // Unrealistic data because payment platform fee may be deducted, and discount applied on order total is ignored at this point. On real orders, refund amount will need to be validated manually
+                            $payment->setRefundedAmount($totalRefundedAmount);
+                        }
+                    }
+                }
+
+                $order->addPayment($payment);
+            }
 
             // TODO: finir les propriétés de commande
 

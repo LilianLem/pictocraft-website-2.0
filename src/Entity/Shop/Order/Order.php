@@ -105,7 +105,7 @@ class Order
     #[ORM\ManyToOne]
     private ?Country $addressCountry = null;
 
-    #[ORM\OneToMany(mappedBy: 'order', targetEntity: Payment::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: Payment::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $payments;
 
     // ------ Sauvegarde au moment de la commande de l'adresse définie par l'utilisateur dans ses paramètres comme étant celle à utiliser pour la facturation et pour la livraison des produits physiques le cas échéant ------ \\
