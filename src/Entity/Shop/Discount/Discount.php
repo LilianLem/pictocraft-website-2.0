@@ -129,6 +129,12 @@ class Discount
     #[ORM\OneToMany(mappedBy: 'discount', targetEntity: DiscountUserHistory::class, orphanRemoval: true)]
     private Collection $usersHistory;
 
+    #[ORM\OneToMany(mappedBy: 'discount1', targetEntity: ForbiddenCombination::class, orphanRemoval: true, cascade: ["persist", "remove"])]
+    private Collection $forbiddenCombinations;
+
+    #[ORM\OneToMany(mappedBy: 'discount2', targetEntity: ForbiddenCombination::class, orphanRemoval: true, cascade: ["persist", "remove"])]
+    private Collection $forbiddenCombinations2;
+
     public function __construct()
     {
         $this->priority = 0;
@@ -137,6 +143,8 @@ class Discount
         $this->constraintGroups = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
         $this->usersHistory = new ArrayCollection();
+        $this->forbiddenCombinations = new ArrayCollection();
+        $this->forbiddenCombinations2 = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -508,6 +516,76 @@ class Discount
             if ($userHistory->getDiscount() === $this) {
                 $userHistory->setDiscount(null);
             }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return array<int, Discount>
+     */
+    public function getIncompatibleDiscounts(): array
+    {
+        $discounts = [];
+
+        if($this->getForbiddenCombinations()->isEmpty()) {
+            return [];
+        }
+
+        foreach($this->getForbiddenCombinations() as $combination) {
+            $incompatibleDiscount = $combination->getDiscount1()->getId() === $this->getId() ? $combination->getDiscount2() : $combination->getDiscount1();
+            $discounts[$incompatibleDiscount->getId()] = $incompatibleDiscount;
+        }
+
+        return $discounts;
+    }
+
+    /**
+     * @return Collection<int, ForbiddenCombination>
+     */
+    public function getForbiddenCombinations(): Collection
+    {
+        $forbiddenCombinations = new ArrayCollection();
+
+        if(!$this->forbiddenCombinations->isEmpty()) {
+            foreach($this->forbiddenCombinations as $combination) {
+                $forbiddenCombinations->add($combination);
+            }
+        }
+
+        if(!$this->forbiddenCombinations2->isEmpty()) {
+            foreach($this->forbiddenCombinations2 as $combination) {
+                $forbiddenCombinations->add($combination);
+            }
+        }
+
+        return $forbiddenCombinations;
+    }
+
+    public function addForbiddenCombination(ForbiddenCombination $forbiddenCombination): self
+    {
+        if(!$forbiddenCombination->getDiscount1() && !$forbiddenCombination->getDiscount2()) {
+            throw new Exception("Impossible d'ajouter une combinaison de réductions si les deux ne sont pas définies");
+        }
+
+        if(!$forbiddenCombination->getDiscount1()) {
+            $forbiddenCombination->setDiscount1($this);
+        } elseif(!$forbiddenCombination->getDiscount2()) {
+            $forbiddenCombination->setDiscount2($this);
+        }
+
+        if (!$this->forbiddenCombinations->contains($forbiddenCombination)) {
+            $this->forbiddenCombinations->add($forbiddenCombination);
+        }
+
+        return $this;
+    }
+
+    public function removeForbiddenCombination(ForbiddenCombination $forbiddenCombination): self
+    {
+        if ($this->forbiddenCombinations->removeElement($forbiddenCombination)) {
+            $forbiddenCombination->setDiscount1(null);
+            $forbiddenCombination->setDiscount2(null);
         }
 
         return $this;

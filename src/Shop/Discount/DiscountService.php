@@ -277,6 +277,32 @@ class DiscountService
             }
         }
 
+        if($discount->getIncompatibleDiscounts()) {
+            $incompatibleDiscounts = $discount->getIncompatibleDiscounts();
+
+            if(is_null($alreadyAppliedDiscounts)) {
+                $alreadyAppliedDiscounts = $this->getDiscountsApplied($order, true);
+            }
+
+            /** @var array<int, Discount> $conflictedDiscounts */
+            $conflictedDiscounts = [];
+
+            foreach($alreadyAppliedDiscounts as $id => $discount) {
+                if(isset($incompatibleDiscounts[$id])) {
+                    $conflictedDiscounts[$id] = $discount;
+                }
+            }
+
+            if($conflictedDiscounts) {
+                return new ApplyDiscountReturnType(
+                    false,
+                    $discountsCache,
+                    NotAppliedTypeEnum::CRITICAL,
+                    "Cette réduction est incompatible avec les réductions suivantes : ".implode(", ", array_map(fn(Discount $discount):string => empty($discount->getLabel()) ? $discount->getId() : $discount->getLabel(), $conflictedDiscounts))
+                );
+            }
+        }
+
         if($discount->getAppliesOn() === DiscountAppliesOnEnum::ORDER) {
             if(!$order->getTotalAmountTtc()) {
                 return new ApplyDiscountReturnType(
