@@ -47,6 +47,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ObjectManager;
 use Exception;
 use Faker\Factory;
+use Faker\Generator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
@@ -54,6 +55,7 @@ class AppFixtures extends Fixture
 {
     private LoggerInterface $logger;
     private EntityManagerInterface $em;
+    private Generator $faker;
     private UserPasswordHasherInterface $passwordHasher;
     private CountryRepository $countryRepository;
     private CommunePostalDataRepository $communePostalDataRepository;
@@ -82,20 +84,19 @@ class AppFixtures extends Fixture
         $this->communePostalDataRepository = $communePostalDataRepository;
         $this->departements = $departementRepository->findAll();
         $this->france = $this->countryRepository->findOneBy(["isoCode_alpha2" => "FR"]);
+        $this->highestCommunePostalDataId = $this->communePostalDataRepository->getMaxId();
         $this->addressLineBuildingInsideCollection = ["RDC", "1er étage", "2ème étage", "3ème étage"];
         $this->addressLineBuildingOutsideCollection = ["Bâtiment A", "Bâtiment B", "Bâtiment C", "Lotissement A", "Lotissement B", "Lotissement C"];
         $this->vatRates = $vatRateRepository->findAll();
+
+        $this->faker = Factory::create("fr_FR");
+        $this->faker->addProvider(new Commerce($this->faker));
+        $this->faker->addProvider(new Avatar($this->faker));
+        $this->faker->addProvider(new PicsumPhotosProvider($this->faker));
     }
 
     public function load(ObjectManager $manager): void
     {
-        $faker = Factory::create("fr_FR");
-        $faker->addProvider(new Commerce($faker));
-        $faker->addProvider(new Avatar($faker));
-        $faker->addProvider(new PicsumPhotosProvider($faker));
-
-        $this->highestCommunePostalDataId = $this->communePostalDataRepository->getMaxId();
-
         // ===== CORE ===== \\
 
         // ----- Role ----- \\
@@ -231,21 +232,21 @@ class AppFixtures extends Fixture
         for($u = 1; $u <= 50; $u++) {
             $user = new User();
 
-            $user->setLastName($faker->lastName())
-                ->setGender($faker->boolean() ? GenderEnum::FEMALE : GenderEnum::MALE);
+            $user->setLastName($this->faker->lastName())
+                ->setGender($this->faker->boolean() ? GenderEnum::FEMALE : GenderEnum::MALE);
 
             if($user->getGender() === GenderEnum::FEMALE) {
-                $user->setFirstName($faker->firstNameFemale());
+                $user->setFirstName($this->faker->firstNameFemale());
             } else {
-                $user->setFirstName($faker->firstNameMale());
+                $user->setFirstName($this->faker->firstNameMale());
             }
 
             $user->setPassword($this->passwordHasher->hashPassword($user, "RandomUser00"))
-                ->setBirthday(DateTimeImmutable::createFromMutable($faker->dateTimeBetween("-30 years", "-13 years")->setTime(0, 0)))
+                ->setBirthday(DateTimeImmutable::createFromMutable($this->faker->dateTimeBetween("-30 years", "-13 years")->setTime(0, 0)))
                 ->setVotingCode(mt_rand(1000000000, 1999999999))
-                ->setFirstLogin($faker->dateTimeBetween("-5 years", "-15 days")->format("Y-m-d"))
-                ->setEnabled($faker->boolean(70))
-                ->setWarnings($faker->boolean(70) ? 0 : ($faker->boolean(40) ? 1 : mt_rand(2, 4)))
+                ->setFirstLogin($this->faker->dateTimeBetween("-5 years", "-15 days")->format("Y-m-d"))
+                ->setEnabled($this->faker->boolean(70))
+                ->setWarnings($this->faker->boolean(70) ? 0 : ($this->faker->boolean(40) ? 1 : mt_rand(2, 4)))
                 ->addRole((new RoleUser())->setUser($user)->setRole($role_user));
 
             // TODO: modifier la génération des consentements pour qu'elle corresponde davantage à une réalité de prod (en fonction des autres éléments de l'utilisateur, surtout s'il a renseigné ou non les éléments concernés ou s'il est membre)
@@ -253,19 +254,19 @@ class AppFixtures extends Fixture
             $userConsents->setDiscordAccountUsage(true)
                 ->setEmailContactPurpose(true)
                 ->setEmailServiceProvidersUsage(true)
-                ->setMainAddressOtherUsage($faker->boolean(70))
-                ->setMainAddressShopUsage($faker->boolean(80))
+                ->setMainAddressOtherUsage($this->faker->boolean(70))
+                ->setMainAddressShopUsage($this->faker->boolean(80))
                 ->setMinecraftAccountUsage(true)
                 ->setPhoneContactPurpose(true)
                 ->setProtectedBirthday(true)
-                ->setPublicAge($faker->boolean(90))
+                ->setPublicAge($this->faker->boolean(90))
                 ->setPublicDepartement(true)
                 ->setPublicFirstLogin(true)
                 ->setPublicUsername(true)
                 ->setReadAndAcceptedPenaltyTerms(true)
                 ->setReadAndAcceptedRules(true)
                 ->setRealPersonalInfo(true)
-                ->setSecretSantaAddressUsage($faker->boolean())
+                ->setSecretSantaAddressUsage($this->faker->boolean())
                 ->setStatisticalPurposes(true)
                 ->setSteamAccountUsage(true)
                 ->setUsernameCompliant(true);
@@ -273,17 +274,17 @@ class AppFixtures extends Fixture
             $manager->persist($userConsents);
 
             $userProfile = new Profile();
-            $userProfile->setDescription($faker->boolean(30) ? $faker->realText(255) : null);
+            $userProfile->setDescription($this->faker->boolean(30) ? $this->faker->realText(255) : null);
             $user->setProfile($userProfile);
             $manager->persist($userProfile);
 
             $userSettings = new Settings();
             $userSettings->setAddressCountry($this->france)
                 ->setAddressCommunePostalData($this->getRandomCommunePostalData())
-                ->setDepartement($faker->boolean(85) ? $userSettings->getAddressCommunePostalData()->getCommune()->getDepartement() : $faker->randomElement($this->departements))
-                ->setAddressLineStreet($faker->streetAddress())
-                ->setAddressLineBuildingInside($faker->boolean() ? $faker->randomElement($this->addressLineBuildingInsideCollection) : null)
-                ->setAddressLineBuildingOutside($faker->boolean() ? $faker->randomElement($this->addressLineBuildingOutsideCollection) : null)
+                ->setDepartement($this->faker->boolean(85) ? $userSettings->getAddressCommunePostalData()->getCommune()->getDepartement() : $this->faker->randomElement($this->departements))
+                ->setAddressLineStreet($this->faker->streetAddress())
+                ->setAddressLineBuildingInside($this->faker->boolean() ? $this->faker->randomElement($this->addressLineBuildingInsideCollection) : null)
+                ->setAddressLineBuildingOutside($this->faker->boolean() ? $this->faker->randomElement($this->addressLineBuildingOutsideCollection) : null)
                 ->setAddressLineHamlet($userSettings->getAddressCommunePostalData()->getHamlet())
                 ->setPhoneNumber(str_pad(strval(mt_rand("600000000", "799999999")), 10, "0", STR_PAD_LEFT))
                 ->setAvoidDuplicateGames(false);
@@ -309,8 +310,8 @@ class AppFixtures extends Fixture
                     2 => $firstName_lower[0].$lastName_lower,
                     3 => $firstName_lower.$departement_lower,
                     4 => $firstName_lower[0].$lastName_lower.$departement_lower,
-                    5 => $faker->sentence(2, false).$departement_lower,
-                    default => $faker->sentence(2, false)
+                    5 => $this->faker->sentence(2, false).$departement_lower,
+                    default => $this->faker->sentence(2, false)
                 };
 
                 if(!array_search($username, $generatedUsernames)) {
@@ -346,18 +347,18 @@ class AppFixtures extends Fixture
             }
 
             $userStats = new Stats();
-            $userStats->setLastLoginAt($faker->dateTimeBetween(Carbon::createFromFormat("Y-m-d", $user->getFirstLogin())->isAfter(Carbon::parse("1 year ago")) ? $user->getFirstLogin() : "-1 year", "-3 days"))
-                ->setLastLoginAttemptAt($faker->boolean(80) ? $userStats->getLastLoginAt() : $faker->dateTimeInInterval($userStats->getLastLoginAt()->format("Y-m-d H:i:s"), "+2 days"))
+            $userStats->setLastLoginAt($this->faker->dateTimeBetween(Carbon::createFromFormat("Y-m-d", $user->getFirstLogin())->isAfter(Carbon::parse("1 year ago")) ? $user->getFirstLogin() : "-1 year", "-3 days"))
+                ->setLastLoginAttemptAt($this->faker->boolean(80) ? $userStats->getLastLoginAt() : $this->faker->dateTimeInInterval($userStats->getLastLoginAt()->format("Y-m-d H:i:s"), "+2 days"))
                 ->setNbLoginAttempts($userStats->getLastLoginAt() === $userStats->getLastLoginAttemptAt() ? 0 : mt_rand(1, 3));
             $user->setStats($userStats);
             $manager->persist($userStats);
 
             // Données si l'utilisateur est membre
-            if($faker->boolean(70)) {
+            if($this->faker->boolean(70)) {
                 $user->addRole((new RoleUser())->setUser($user)->setRole($role_member))
-                    ->setChristmasGiftEligible($faker->boolean(70))
-                    ->setSecretSantaEligible($faker->boolean(70));
-                $user->getStats()->setGifted($faker->boolean());
+                    ->setChristmasGiftEligible($this->faker->boolean(70))
+                    ->setSecretSantaEligible($this->faker->boolean(70));
+                $user->getStats()->setGifted($this->faker->boolean());
             }
 
             if(array_search("ROLE_MEMBER", $user->getRoles())) {
@@ -388,7 +389,7 @@ class AppFixtures extends Fixture
         $user->setUsername("SuperAdmin82")
             ->setEmail("superadmin-mail@pictocraft-fake01.fr")
             ->setPassword($this->passwordHasher->hashPassword($user, "Superadmin123"))
-            ->setBirthday(DateTimeImmutable::createFromMutable($faker->dateTimeBetween("-30 years", "-18 years")->setTime(0, 0)))
+            ->setBirthday(DateTimeImmutable::createFromMutable($this->faker->dateTimeBetween("-30 years", "-18 years")->setTime(0, 0)))
             ->setFirstLogin("2017-01-01")
             ->setEnabled(true)
             ->setChristmasGiftEligible(false)
@@ -399,7 +400,7 @@ class AppFixtures extends Fixture
             ->setPublicAge(true)
             ->setSecretSantaAddressUsage(true);
         $user->getStats()->setGifted(false)
-            ->setLastLoginAt($faker->dateTimeBetween("-1 week", "-3 days"))
+            ->setLastLoginAt($this->faker->dateTimeBetween("-1 week", "-3 days"))
             ->setLastLoginAttemptAt($userStats->getLastLoginAt());
 
         if(!array_search("ROLE_MEMBER", $user->getRoles())) {
@@ -420,28 +421,34 @@ class AppFixtures extends Fixture
             ->setEnabled(true);
         $manager->persist($category);
 
+        /** @var string[] $firstLevelCategoryNameIndex */
+        $firstLevelCategoryNameIndex = [];
+
         for($c = 1; $c <= 10; $c++) {
             $category = new Category();
-            $category->setName($faker->department(2))
-                ->setEnabled($faker->boolean(70))
-                ->setHidden($faker->boolean(20));
+            $category->setName($this->generateRandomName(200, fn():string => $this->faker->department(2), $firstLevelCategoryNameIndex))
+                ->setEnabled($this->faker->boolean(70))
+                ->setHidden($this->faker->boolean(20));
 
-            if($faker->boolean(60)) {
-                $category->setDefaultVatRate($faker->randomElement($this->vatRates));
+            if($this->faker->boolean(60)) {
+                $category->setDefaultVatRate($this->faker->randomElement($this->vatRates));
             }
 
             $manager->persist($category);
 
+            /** @var string[] $subcategoriesNameIndex */
+            $subcategoriesNameIndex = [];
+
             $subcategoryOwnVatRateProbability = $category->getDefaultVatRate() ? 20 : 80;
             for($sc = 1; $sc <= mt_rand(1, 3); $sc++) {
                 $subcategory = new Category();
-                $subcategory->setName($faker->department(2))
-                    ->setEnabled($faker->boolean(90))
-                    ->setHidden($faker->boolean(20))
+                $subcategory->setName($this->generateRandomName(200, fn():string => $this->faker->department(2), $subcategoriesNameIndex))
+                    ->setEnabled($this->faker->boolean(90))
+                    ->setHidden($this->faker->boolean(20))
                     ->setParent($category);
 
-                if($faker->boolean($subcategoryOwnVatRateProbability)) {
-                    $subcategory->setDefaultVatRate($faker->randomElement($this->vatRates));
+                if($this->faker->boolean($subcategoryOwnVatRateProbability)) {
+                    $subcategory->setDefaultVatRate($this->faker->randomElement($this->vatRates));
                 }
 
                 $manager->persist($subcategory);
@@ -456,25 +463,25 @@ class AppFixtures extends Fixture
         $attributes = [];
         for($a = 1; $a <= 10; $a++) {
             $attribute = new Attribute();
-            $attribute->setName(substr($faker->sentence(2, false), 0, -1));
+            $attribute->setName(substr($this->faker->sentence(2, false), 0, -1));
             $manager->persist($attribute);
 
             $attributes[] = $attribute;
 
             // Check if an identical value is allowed for distinct attributes
-            if($faker->boolean(30)) {
+            if($this->faker->boolean(30)) {
                 $value = new Value();
                 $value->setAttribute($attribute)
                     ->setValue("Doublon")
-                    ->setHidden($faker->boolean());
+                    ->setHidden($this->faker->boolean());
                 $manager->persist($value);
             }
 
             for($v = 1; $v <= mt_rand(2, 6); $v++) {
                 $value = new Value();
                 $value->setAttribute($attribute)
-                    ->setValue(substr($faker->sentence(2, false), 0, -1))
-                    ->setHidden($faker->boolean(30));
+                    ->setValue(substr($this->faker->sentence(2, false), 0, -1))
+                    ->setHidden($this->faker->boolean(30));
                 $manager->persist($value);
             }
         }
@@ -484,16 +491,16 @@ class AppFixtures extends Fixture
         /** @var Delivery[] $deliveries */
         $deliveries = [];
         for($d = 1; $d <= 10; $d++) {
-            $deliveryType = $faker->boolean(10) ?
+            $deliveryType = $this->faker->boolean(10) ?
                 DeliveryTypeEnum::MANUAL_SHOP :
                 (
-                    $faker->boolean() ?
+                    $this->faker->boolean() ?
                         DeliveryTypeEnum::MANUAL_USER :
                         DeliveryTypeEnum::AUTOMATIC
                 );
 
             $delivery = new Delivery();
-            $delivery->setName(substr($faker->sentence(3), 0, -1))
+            $delivery->setName(substr($this->faker->sentence(3), 0, -1))
                 ->setType($deliveryType);
             $manager->persist($delivery);
 
@@ -509,10 +516,10 @@ class AppFixtures extends Fixture
 
         for($pm = 1; $pm <= 10; $pm++) {
             $paymentMethod = new PaymentMethod();
-            $paymentMethod->setName(substr($faker->sentence(2, false), 0, -1))
-                ->setEnabled($faker->boolean(80))
-                ->setSelectable($faker->boolean())
-                ->setType($faker->randomElement(PaymentMethodTypeEnum::cases()));
+            $paymentMethod->setName(substr($this->faker->sentence(2, false), 0, -1))
+                ->setEnabled($this->faker->boolean(80))
+                ->setSelectable($this->faker->boolean())
+                ->setType($this->faker->randomElement(PaymentMethodTypeEnum::cases()));
             $manager->persist($paymentMethod);
 
             $paymentMethods[] = $paymentMethod;
@@ -520,6 +527,19 @@ class AppFixtures extends Fixture
             if($paymentMethod->isEnabled() && $paymentMethod->isSelectable() && $paymentMethod->getType() === PaymentMethodTypeEnum::AUTOMATIC) {
                 $availablePaymentMethods[] = $paymentMethod;
             }
+        }
+
+        // In case no available payment method has been created above
+        if(!$availablePaymentMethods) {
+            $paymentMethod = new PaymentMethod();
+            $paymentMethod->setName(substr($this->faker->sentence(2, false), 0, -1))
+                ->setEnabled(true)
+                ->setSelectable(true)
+                ->setType(PaymentMethodTypeEnum::AUTOMATIC);
+            $manager->persist($paymentMethod);
+
+            $paymentMethods[] = $paymentMethod;
+            $availablePaymentMethods[] = $paymentMethod;
         }
 
         // Flush before creating products, because we're checking constraints based on ID comparisons for some properties
@@ -533,44 +553,32 @@ class AppFixtures extends Fixture
 
         /** @var Product[] $products */
         $products = [];
-        /** @var string[] $productNames */
-        $productNames = [];
+        /** @var string[] $productNameIndex */
+        $productNameIndex = [];
         for($p = 1; $p <= 200; $p++) {
-            $amount = $faker->boolean() ? -1 : mt_rand(0,10);
+            $amount = $this->faker->boolean() ? -1 : mt_rand(0,10);
 
             $deliveriesForVirtualProducts = array_filter($deliveries, fn($delivery) => $delivery->getType() !== DeliveryTypeEnum::PHYSICAL);
 
-            $i = 0;
-            while($i < 100) {
-                $productName = $faker->productName();
-
-                if(!array_search($productName, $productNames)) {
-                    $productNames[] = $productName;
-                    break;
-                }
-
-                $i++;
-            }
-
             $product = new Product();
-            $product->setName($productName)
-                ->setEnabled($faker->boolean(75))
-                ->setBuyable($faker->boolean(70))
-                ->setHidden($faker->boolean(30))
-                ->setPriceTtc($faker->boolean(10) ? 0 : mt_rand(500, 5000))
+            $product->setName($this->generateRandomName(200, fn(): string => $this->faker->productName(), $productNameIndex))
+                ->setEnabled($this->faker->boolean(75))
+                ->setBuyable($this->faker->boolean(70))
+                ->setHidden($this->faker->boolean(30))
+                ->setPriceTtc($this->faker->boolean(10) ? 0 : mt_rand(500, 5000))
                 ->setQuantity($amount);
-            $product->setDelivery($amount === -1 || $product->getPriceTtc() === 0 ? $faker->randomElement($deliveriesForVirtualProducts) : $faker->randomElement($deliveries))
-                ->setReference($faker->regexify("[A-Z]{2}[A-Z0-9]{2}"))
-                ->setDescription($faker->text(1800))
-                ->setImage(explode("/id/", $faker->imageUrl(512, 512, true))[1]) // TODO: Corps à ajouter sur les URL en test (à mettre dans une variable env) : https://picsum.photos/id/
-                ->setSubtitle($faker->boolean() ? str_replace(".", "", substr($faker->sentence(4, false), 0, 48))  : "");
+            $product->setDelivery($amount === -1 || $product->getPriceTtc() === 0 ? $this->faker->randomElement($deliveriesForVirtualProducts) : $this->faker->randomElement($deliveries))
+                ->setReference($this->faker->regexify("[A-Z]{2}[A-Z0-9]{2}"))
+                ->setDescription($this->faker->text(1800))
+                ->setImage(explode("/id/", $this->faker->imageUrl(512, 512, true))[1]) // TODO: Corps à ajouter sur les URL en test (à mettre dans une variable env) : https://picsum.photos/id/
+                ->setSubtitle($this->faker->boolean() ? str_replace(".", "", substr($this->faker->sentence(4, false), 0, 48))  : "");
 
             /** @var Attribute[] $productAttributes */
-            $productAttributes = $faker->randomElements($attributes, mt_rand(2, 5));
+            $productAttributes = $this->faker->randomElements($attributes, mt_rand(2, 5));
 
             foreach($productAttributes as $attribute) {
                 /** @var Value $attributeValue */
-                $attributeValue = $faker->randomElement($attribute->getAttributeValues()->getValues());
+                $attributeValue = $this->faker->randomElement($attribute->getAttributeValues()->getValues());
 
                 $product->addAttribute($attributeValue);
             }
@@ -581,7 +589,7 @@ class AppFixtures extends Fixture
             $i = 0;
             while($i < 50 && count($productCategories) < $categoriesNb) {
                 /** @var Category $category */
-                $category = $faker->randomElement($categories);
+                $category = $this->faker->randomElement($categories);
 
                 if(
                     !array_key_exists($category->getId(), $productCategories) &&
@@ -603,8 +611,8 @@ class AppFixtures extends Fixture
                 if($isFirstCategory) {
                     $productCategory->setMain(true);
 
-                    if(!$category->getApplicableVatRate() || $faker->boolean(10)) {
-                        $product->setVatRate($faker->randomElement($this->vatRates));
+                    if(!$category->getApplicableVatRate() || $this->faker->boolean(10)) {
+                        $product->setVatRate($this->faker->randomElement($this->vatRates));
                     }
 
                     $isFirstCategory = false;
@@ -635,12 +643,12 @@ class AppFixtures extends Fixture
 
         for($o = 1; $o <= 100; $o++) {
             /** @var User $user */
-            $user = $faker->randomElement($users);
+            $user = $this->faker->randomElement($users);
 
             $order = new Order();
             $order->setReference(mt_rand(100000000, 999999999))
                 ->setUser($user)
-                ->setCreatedAt(DateTimeImmutable::createFromMutable($faker->dateTimeBetween($user->getFirstLogin(), $user->getStats()->getLastLoginAt())))
+                ->setCreatedAt(DateTimeImmutable::createFromMutable($this->faker->dateTimeBetween($user->getFirstLogin(), $user->getStats()->getLastLoginAt())))
                 ->setAddressLineStreet($user->getSettings()->getAddressLineStreet())
                 ->setAddressLineBuildingInside($user->getSettings()->getAddressLineBuildingInside())
                 ->setAddressLineBuildingOutside($user->getSettings()->getAddressLineBuildingOutside())
@@ -669,8 +677,8 @@ class AppFixtures extends Fixture
             ];
 
             /** @var OrderStatusEnum $finalStatus */
-            $finalStatus = $finalStatusArray[$faker->randomDigit()];
-            $nextStatusDate = $faker->dateTimeBetween(DateTime::createFromImmutable($order->getCreatedAt()), $user->getStats()->getLastLoginAt());
+            $finalStatus = $finalStatusArray[$this->faker->randomDigit()];
+            $nextStatusDate = $this->faker->dateTimeBetween(DateTime::createFromImmutable($order->getCreatedAt()), $user->getStats()->getLastLoginAt());
 
             if($finalStatus === OrderStatusEnum::CART_CURRENT) {
                 if(isset($ordersUserCartMatch[$user->getId()])) {
@@ -691,7 +699,7 @@ class AppFixtures extends Fixture
                         ->setDate($nextStatusDate)
                 );
 
-                $nextStatusDate = $faker->dateTimeBetween($nextStatusDate, $user->getStats()->getLastLoginAt());
+                $nextStatusDate = $this->faker->dateTimeBetween($nextStatusDate, $user->getStats()->getLastLoginAt());
 
                 switch($finalStatus) {
                     case OrderStatusEnum::ORDER_CONFIRMED:
@@ -702,7 +710,7 @@ class AppFixtures extends Fixture
                         );
 
                         if($finalStatus === OrderStatusEnum::ORDER_CANCELLED) {
-                            $nextStatusDate = $faker->dateTimeBetween($nextStatusDate, $user->getStats()->getLastLoginAt());
+                            $nextStatusDate = $this->faker->dateTimeBetween($nextStatusDate, $user->getStats()->getLastLoginAt());
 
                             $order->addStatusToHistory(
                                 (new OrderStatus())->setStatus(OrderStatusEnum::ORDER_CANCELLED)
@@ -731,7 +739,7 @@ class AppFixtures extends Fixture
             // --- Managing statuses | End ---
 
             $mostRecentItemUpdateDate = null;
-            $orderNbProducts = $faker->boolean(80) ? 1 : ($faker->boolean(75) ? 2 : 3);
+            $orderNbProducts = $this->faker->boolean(80) ? 1 : ($this->faker->boolean(75) ? 2 : 3);
             for($p = 1; $p <= $orderNbProducts; $p++) {
                 $productValid = false;
                 $i = 0;
@@ -739,7 +747,7 @@ class AppFixtures extends Fixture
                     $i++;
 
                     /** @var Product $product */
-                    $product = $faker->randomElement($products_notPhysical);
+                    $product = $this->faker->randomElement($products_notPhysical);
 
                     if(!$order->getItems()->exists(fn(int $key, OrderItem $item) => $product->getId() === $item->getProduct()->getId())) {
                         $productValid = true;
@@ -794,44 +802,44 @@ class AppFixtures extends Fixture
 
                         switch($item->getDelivery()->getType()) {
                             case DeliveryTypeEnum::AUTOMATIC:
-                                if($finalStatus !== OrderStatusEnum::ORDER_CANCELLED && $faker->boolean(10)) {
+                                if($finalStatus !== OrderStatusEnum::ORDER_CANCELLED && $this->faker->boolean(10)) {
                                     // Si la livraison automatique échoue
                                     $item->addStatusToHistory(
                                         (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_REQUEST_SENT)
                                             ->setDate($nextItemStatusDate)
                                     );
 
-                                    if($faker->boolean(20)) {
+                                    if($this->faker->boolean(20)) {
                                         break;
                                     }
 
-                                    $nextItemStatusDate = $faker->dateTimeBetween($orderConfirmedStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                    $nextItemStatusDate = $this->faker->dateTimeBetween($orderConfirmedStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                                     $item->addStatusToHistory(
                                         (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_ACTIVATED)
                                             ->setDate($nextItemStatusDate)
                                     );
                                 } else {
                                     $item->addStatusToHistory(
-                                        (new OrderItemStatus())->setStatus($faker->boolean() ? OrderItemStatusEnum::ITEM_ACTIVATED : OrderItemStatusEnum::DELIVERY_DONE)
+                                        (new OrderItemStatus())->setStatus($this->faker->boolean() ? OrderItemStatusEnum::ITEM_ACTIVATED : OrderItemStatusEnum::DELIVERY_DONE)
                                             ->setDate($nextItemStatusDate)
                                     );
                                 }
 
                                 break;
                             case DeliveryTypeEnum::MANUAL_SHOP:
-                                $nextItemStatusDate = $faker->dateTimeBetween($orderConfirmedStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $nextItemStatusDate = $this->faker->dateTimeBetween($orderConfirmedStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                                 $item->addStatusToHistory(
                                     (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_REQUEST_SENT)
                                         ->setDate($nextItemStatusDate)
                                 );
 
-                                if($finalStatus !== OrderStatusEnum::ORDER_CANCELLED && $faker->boolean(20)) {
+                                if($finalStatus !== OrderStatusEnum::ORDER_CANCELLED && $this->faker->boolean(20)) {
                                     break;
                                 }
 
-                                $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $nextItemStatusDate = $this->faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                                 $item->addStatusToHistory(
-                                    (new OrderItemStatus())->setStatus($faker->boolean() ? OrderItemStatusEnum::ITEM_ACTIVATED : OrderItemStatusEnum::DELIVERY_DONE)
+                                    (new OrderItemStatus())->setStatus($this->faker->boolean() ? OrderItemStatusEnum::ITEM_ACTIVATED : OrderItemStatusEnum::DELIVERY_DONE)
                                         ->setDate($nextItemStatusDate)
                                 );
 
@@ -842,22 +850,22 @@ class AppFixtures extends Fixture
                                         ->setDate($nextItemStatusDate)
                                 );
 
-                                if($faker->boolean(20)) {
+                                if($this->faker->boolean(20)) {
                                     break;
                                 }
 
-                                $itemActivationStatus = $faker->boolean(80) ? OrderItemStatusEnum::ITEM_ACTIVATED : ($faker->boolean() ? OrderItemStatusEnum::ITEM_PARTIALLY_ACTIVATED_DISCORD : OrderItemStatusEnum::ITEM_PARTIALLY_ACTIVATED_MINECRAFT);
-                                $nextItemStatusDate = $faker->dateTimeBetween($orderConfirmedStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $itemActivationStatus = $this->faker->boolean(80) ? OrderItemStatusEnum::ITEM_ACTIVATED : ($this->faker->boolean() ? OrderItemStatusEnum::ITEM_PARTIALLY_ACTIVATED_DISCORD : OrderItemStatusEnum::ITEM_PARTIALLY_ACTIVATED_MINECRAFT);
+                                $nextItemStatusDate = $this->faker->dateTimeBetween($orderConfirmedStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                                 $item->addStatusToHistory(
                                     (new OrderItemStatus())->setStatus($itemActivationStatus)
                                         ->setDate($nextItemStatusDate)
                                 );
 
-                                if($itemActivationStatus === OrderItemStatusEnum::ITEM_ACTIVATED || $faker->boolean()) {
+                                if($itemActivationStatus === OrderItemStatusEnum::ITEM_ACTIVATED || $this->faker->boolean()) {
                                     break;
                                 }
 
-                                $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $nextItemStatusDate = $this->faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                                 $item->addStatusToHistory(
                                     (new OrderItemStatus())->setStatus(OrderItemStatusEnum::ITEM_ACTIVATED)
                                         ->setDate($nextItemStatusDate)
@@ -869,7 +877,7 @@ class AppFixtures extends Fixture
                         }
 
                         $cancellationPath = false;
-                        if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(30)) {
+                        if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $this->faker->boolean(30)) {
                             // Retours et rétractations
                             $withdrawalAndReturnStatusArray = [
                                 "withdrawal" => [
@@ -885,22 +893,22 @@ class AppFixtures extends Fixture
                             ];
 
                             /** @var OrderItemStatusEnum[] $requestStatusArray */
-                            $requestStatusArray = $withdrawalAndReturnStatusArray[$faker->boolean(70) ? "withdrawal" : "return"];
+                            $requestStatusArray = $withdrawalAndReturnStatusArray[$this->faker->boolean(70) ? "withdrawal" : "return"];
 
-                            $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                            $nextItemStatusDate = $this->faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                             $item->addStatusToHistory(
                                 (new OrderItemStatus())->setStatus($requestStatusArray["sent"])
                                     ->setDate($nextItemStatusDate)
                             );
 
-                            if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(80)) {
+                            if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $this->faker->boolean(80)) {
                                 $requestStatusAnswer =
-                                    $finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(80)
+                                    $finalStatus === OrderStatusEnum::ORDER_CANCELLED || $this->faker->boolean(80)
                                     ? $requestStatusArray["accepted"]
                                     : $requestStatusArray["rejected"]
                                 ;
 
-                                $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $nextItemStatusDate = $this->faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                                 $item->addStatusToHistory(
                                     (new OrderItemStatus())->setStatus($requestStatusAnswer)
                                         ->setDate($nextItemStatusDate)
@@ -913,46 +921,46 @@ class AppFixtures extends Fixture
                         }
 
                         if($cancellationPath) {
-                            $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                            $nextItemStatusDate = $this->faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                             $item->addStatusToHistory(
                                 (new OrderItemStatus())->setStatus(OrderItemStatusEnum::RETURN_PENDING)
                                     ->setDate($nextItemStatusDate)
                             );
 
-                            $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                            $nextItemStatusDate = $this->faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                             $item->addStatusToHistory(
                                 (new OrderItemStatus())->setStatus(OrderItemStatusEnum::RETURN_IN_PROGRESS)
                                     ->setDate($nextItemStatusDate)
                             );
 
-                            if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(90)) {
-                                $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                            if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $this->faker->boolean(90)) {
+                                $nextItemStatusDate = $this->faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                                 $item->addStatusToHistory(
                                     (new OrderItemStatus())->setStatus(OrderItemStatusEnum::RETURN_RECEIVED)
                                         ->setDate($nextItemStatusDate)
                                 );
 
-                                $returnStatus = ($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(70))
+                                $returnStatus = ($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $this->faker->boolean(70))
                                     ? OrderItemStatusEnum::RETURN_CONFIRMED
                                     : OrderItemStatusEnum::RETURN_NON_COMPLIANT
                                 ;
-                                $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                $nextItemStatusDate = $this->faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                                 $item->addStatusToHistory(
                                     (new OrderItemStatus())->setStatus($returnStatus)
                                         ->setDate($nextItemStatusDate)
                                 );
 
                                 if($returnStatus === OrderItemStatusEnum::RETURN_CONFIRMED) {
-                                    $nextItemStatusDate = $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
+                                    $nextItemStatusDate = $this->faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled);
                                     $item->addStatusToHistory(
                                         (new OrderItemStatus())->setStatus(OrderItemStatusEnum::REFUND_PENDING)
                                             ->setDate($nextItemStatusDate)
                                     );
 
-                                    if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $faker->boolean(75)) {
+                                    if($finalStatus === OrderStatusEnum::ORDER_CANCELLED || $this->faker->boolean(75)) {
                                         $nextItemStatusDate = ($finalStatus === OrderStatusEnum::ORDER_CANCELLED)
                                             ? $order->getCurrentStatus()->getDate()
-                                            : $faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled)
+                                            : $this->faker->dateTimeBetween($nextItemStatusDate, $maxNextStatusDateWhenNotYetCancelled)
                                         ;
 
                                         $item->addStatusToHistory(
@@ -997,7 +1005,7 @@ class AppFixtures extends Fixture
             // TODO: plusieurs méthodes de paiement sur une même commande (non-prioritaire)
             if($order->getTotalAmountTTC() > 0 && !in_array($finalStatus, [OrderStatusEnum::CART_CURRENT, OrderStatusEnum::CART_ABORTED])) {
                 $payment = new Payment();
-                $payment->setPaymentMethod($faker->randomElement($availablePaymentMethods))
+                $payment->setPaymentMethod($this->faker->randomElement($availablePaymentMethods))
                     ->setAmount($order->getTotalAmountTtc());
 
                 $payment->addStatusToHistory(
@@ -1067,6 +1075,28 @@ class AppFixtures extends Fixture
     {
         $randomId = mt_rand(1, $this->highestCommunePostalDataId);
         return $this->communePostalDataRepository->find($randomId);
+    }
+
+    /**
+     * @param callable(): string $callable
+     * @param string[] $index
+     */
+    private function generateRandomName(int $attempts, callable $callable, array &$index): string
+    {
+        if($attempts < 1 || $attempts > 10000) {
+            throw new Exception("Number of tries is too low or too high");
+        }
+
+        for($i = 1; $i <= $attempts; $i++) {
+            $name = $callable();
+
+            if(!in_array($name, $index)) {
+                $index[] = $name;
+                return $name;
+            }
+        }
+
+        throw new Exception("No name could be generated after $attempts attempts");
     }
 
     // TODO : à déplacer dans une classe utilitaire
