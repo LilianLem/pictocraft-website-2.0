@@ -23,6 +23,7 @@ use App\Entity\Shop\Discount\Constraint;
 use App\Entity\Shop\Discount\ConstraintGroup;
 use App\Entity\Shop\Discount\Discount;
 use App\Entity\Shop\Discount\DiscountAppliesOnEnum;
+use App\Entity\Shop\Discount\ForbiddenCombination;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\Order\Status as OrderStatus;
 use App\Entity\Shop\Order\StatusEnum as OrderStatusEnum;
@@ -40,6 +41,7 @@ use App\Repository\External\Geo\CountryRepository;
 use App\Repository\External\Geo\France\CommunePostalDataRepository;
 use App\Repository\External\Geo\France\DepartementRepository;
 use App\Repository\External\Vat\VatRateRepository;
+use App\Shop\Discount\DiscountService;
 use Bezhanov\Faker\Provider\Avatar;
 use Bezhanov\Faker\Provider\Commerce;
 use Bluemmb\Faker\PicsumPhotosProvider;
@@ -63,6 +65,7 @@ class AppFixtures extends Fixture
     private UserPasswordHasherInterface $passwordHasher;
     private CountryRepository $countryRepository;
     private CommunePostalDataRepository $communePostalDataRepository;
+    private DiscountService $discountService;
 
     /** @var Departement[] $departements */
     private readonly array $departements;
@@ -79,13 +82,14 @@ class AppFixtures extends Fixture
     /** @var VatRate[] $vatRates */
     private readonly array $vatRates;
 
-    public function __construct(LoggerInterface $logger, EntityManagerInterface $em, CountryRepository $countryRepository, CommunePostalDataRepository $communePostalDataRepository, DepartementRepository $departementRepository, VatRateRepository $vatRateRepository, UserPasswordHasherInterface $passwordHasher)
+    public function __construct(LoggerInterface $logger, EntityManagerInterface $em, CountryRepository $countryRepository, CommunePostalDataRepository $communePostalDataRepository, DepartementRepository $departementRepository, DiscountService $discountService, VatRateRepository $vatRateRepository, UserPasswordHasherInterface $passwordHasher)
     {
         $this->logger = $logger;
         $this->em = $em;
         $this->passwordHasher = $passwordHasher;
         $this->countryRepository = $countryRepository;
         $this->communePostalDataRepository = $communePostalDataRepository;
+        $this->discountService = $discountService;
         $this->departements = $departementRepository->findAll();
         $this->france = $this->countryRepository->findOneBy(["isoCode_alpha2" => "FR"]);
         $this->highestCommunePostalDataId = $this->communePostalDataRepository->getMaxId();
@@ -786,6 +790,40 @@ class AppFixtures extends Fixture
             $manager->persist($discount);
         }
 
+        // Flush after creating discounts, because it's needed to add discount forbidden combinations and find eligible discounts below
+        $manager->flush();
+
+        // Discount forbidden combinations
+        /** @var array<int, int[]> $incompatibleTypes */
+        $incompatibleTypes = [
+            0 => [1],
+            1 => [0],
+            2 => [],
+            3 => [],
+            4 => [5, 6],
+            5 => [4],
+            6 => [4],
+            7 => [8, 9],
+            8 => [7, 9],
+            9 => [7, 8]
+        ];
+
+        foreach($discountsByType as $discountType => $discounts) {
+            foreach($incompatibleTypes[$discountType] as $incompatibleType) {
+                foreach($discounts as $discount) {
+                    foreach($discountsByType[$incompatibleType] as $incompatibleDiscount) {
+                        if(
+                            !$discount->getForbiddenCombinations()->exists(fn(int $key, ForbiddenCombination $combination) => in_array($incompatibleDiscount->getId(), $combination->getDiscountIds()))
+                            && !$incompatibleDiscount->getForbiddenCombinations()->exists(fn(int $key, ForbiddenCombination $combination) => in_array($discount->getId(), $combination->getDiscountIds()))
+                        ) {
+                            $forbiddenCombination = (new ForbiddenCombination())->setDiscount1($discount)->setDiscount2($incompatibleDiscount);
+                            $discount->addForbiddenCombination($forbiddenCombination);
+                        }
+                    }
+                }
+            }
+        }
+
         // ----- Order ----- \\
 
         /** @var Order[] $orders */
@@ -1153,7 +1191,10 @@ class AppFixtures extends Fixture
             $order->setUpdatedAt($mostRecentItemUpdateDate);
             $order->updateTotals();
 
-            // TODO : discounts globaux
+            $eligibleDiscounts = $this->discountService->getEligibleDiscountsForOrder($order, null);
+            if($eligibleDiscounts) {
+                $this->discountService->applyMultipleOnOrder($eligibleDiscounts, $order, date: $order->getCreatedAt());
+            }
 
             // TODO: plusieurs méthodes de paiement sur une même commande (non-prioritaire)
             if($order->getTotalAmountTTC() > 0 && !in_array($finalStatus, [OrderStatusEnum::CART_CURRENT, OrderStatusEnum::CART_ABORTED])) {
