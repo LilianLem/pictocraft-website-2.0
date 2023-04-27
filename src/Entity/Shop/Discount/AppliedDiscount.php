@@ -5,6 +5,7 @@ namespace App\Entity\Shop\Discount;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\OrderItem\OrderItem;
 use App\Repository\Shop\Discount\AppliedDiscountRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -45,6 +46,10 @@ class AppliedDiscount
 
     #[ORM\ManyToOne(inversedBy: 'appliedDiscounts')]
     private ?OrderItem $orderItem = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Assert\Length(max: 500, maxMessage: "Le texte ne doit pas dépasser {{ limit }} caractères")]
+    private ?string $conditions = null;
 
     #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "La réduction fixe doit être supérieure à 0€. S'il s'agit d'un pourcentage de réduction, laissez ce champ vide")]
@@ -98,6 +103,18 @@ class AppliedDiscount
     public function setOrderItem(?OrderItem $orderItem): self
     {
         $this->orderItem = $orderItem;
+
+        return $this;
+    }
+
+    public function getConditions(): ?string
+    {
+        return $this->conditions;
+    }
+
+    public function setConditions(?string $conditions): self
+    {
+        $this->conditions = $conditions;
 
         return $this;
     }
