@@ -5,10 +5,17 @@ namespace App\Entity\Shop\Payment;
 use App\Repository\Shop\Payment\StatusRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: StatusRepository::class)]
 #[ORM\Table(name: 'shop_payment_status')]
+#[ORM\UniqueConstraint("payment_status_unique", columns: ["payment_id", "status"])]
+#[UniqueEntity(
+    fields: ["payment", "status"],
+    errorPath: "status",
+    message: "Ce statut est déjà présent sur ce paiement",
+)]
 class Status
 {
     #[ORM\Id]
@@ -23,7 +30,7 @@ class Status
 
     #[ORM\Column(type: 'payment_status_enum')]
     #[Assert\NotBlank]
-    private $status = null;
+    private ?StatusEnum $status = null;
 
     #[ORM\Column]
     #[Assert\DateTime]
