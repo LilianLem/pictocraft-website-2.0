@@ -19,6 +19,10 @@ use App\Entity\Shop\Attribute\Value;
 use App\Entity\Shop\Category;
 use App\Entity\Shop\Delivery\Delivery;
 use App\Entity\Shop\Delivery\TypeEnum as DeliveryTypeEnum;
+use App\Entity\Shop\Discount\Constraint;
+use App\Entity\Shop\Discount\ConstraintGroup;
+use App\Entity\Shop\Discount\Discount;
+use App\Entity\Shop\Discount\DiscountAppliesOnEnum;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\Order\Status as OrderStatus;
 use App\Entity\Shop\Order\StatusEnum as OrderStatusEnum;
@@ -632,6 +636,155 @@ class AppFixtures extends Fixture
         //$manager->flush();
 
         $products_notPhysical = array_filter($products, fn(Product $product) => $product->getDelivery()->getType() !== DeliveryTypeEnum::PHYSICAL);
+        $products_notPhysicalNotFree = array_filter($products_notPhysical, fn(Product $product) => $product->getPriceTtc() > 0);
+
+        // ----- Discounts ----- \\
+
+        /** @var Discount[] $discounts */
+        $discounts = [];
+
+        /** @var array<int, Discount[]> $discountsByType */
+        $discountsByType = [];
+
+        // Indicative array to understand operations below
+        $discountTypesArray = [
+            0 => "wholeShopOnOrderWithMinimumAmount",
+            1 => "wholeShopOnOrderWithMinimumAmountAndMaxDiscountAmount",
+            2 => "oneUserOnOrderNoMinimumAmount",
+            3 => "oneUserOneProductOnProductNoMinimumAmount",
+            4 => "oneProductOnProductNoMinimumAmount",
+            5 => "oneOfTwoProductsOnCheapestProductNoMinimumAmount",
+            6 => "oneProductOneRoleOnProductNoMinimumAmount",
+            7 => "oneCategoryOneRoleOnEligibleProductsNoMinimumAmount",
+            8 => "oneCategoryOnEligibleProductsNoMinimumAmount",
+            9 => "oneAttributeValueOnEligibleProductsNoMinimumAmount",
+        ];
+
+        for($d = 1; $d <= 50; $d++) {
+            $discountTypeIndex = $this->faker->randomDigit();
+
+            /** @var ConstraintGroup $constraintGroups */
+            $constraintGroups = [];
+
+            $constraintGroup = new ConstraintGroup();
+            $constraintGroup->setConstraintsNeeded($discountTypeIndex === 5 ? 1 : 0);
+
+            if(in_array($discountTypeIndex, [3, 4, 6])) {
+                // Only virtual products for now, check order creation comments
+                /** @var Product $discountProduct */
+                $discountProduct = $this->faker->randomElement($products_notPhysicalNotFree);
+
+                $constraintGroup->addConstraint((new Constraint())->setProduct($discountProduct));
+            } elseif(in_array($discountTypeIndex, [7, 8])) {
+                /** @var Category $discountCategory */
+                $discountCategory = $this->faker->randomElement($categories);
+
+                $constraintGroup->addConstraint((new Constraint())->setCategory($discountCategory));
+            } elseif($discountTypeIndex === 5) {
+                /** @var Product[] $discountProducts */
+                $discountProducts = $this->faker->randomElements($products_notPhysicalNotFree, 2);
+
+                foreach($discountProducts as $discountProduct) {
+                    $constraintGroup->addConstraint((new Constraint())->setProduct($discountProduct));
+                }
+            }
+
+            if(in_array($discountTypeIndex, [2, 3])) {
+                /** @var User $discountUser */
+                $discountUser = $this->faker->randomElement($users);
+
+                $constraintGroup->addConstraint((new Constraint())->setUser($discountUser));
+            } elseif(in_array($discountTypeIndex, [6, 7])) {
+                /** @var Role $discountRole */
+                $discountRole = $this->faker->randomElement($roles);
+
+                $constraintGroup->addConstraint((new Constraint())->setRole($discountRole));
+            } elseif($discountTypeIndex === 8) {
+                /** @var Attribute[] $discountAttributes */
+                $discountAttributes = $this->faker->randomElements($attributes, 2);
+
+                $constraintGroup2 = new ConstraintGroup();
+                $constraintGroup2->setConstraintsNeeded(1);
+
+                foreach($discountAttributes as $discountAttribute) {
+                    /** @var Value $discountAttrValue */
+                    $discountAttrValue = $this->faker->randomElement($discountAttribute->getAttributeValues());
+
+                    $constraintGroup2->addConstraint((new Constraint())->setAttributeValue($discountAttrValue));
+                }
+
+                $constraintGroups[] = $constraintGroup2;
+            } elseif($discountTypeIndex === 9) {
+                /** @var Attribute $discountAttribute */
+                $discountAttribute = $this->faker->randomElement($attributes);
+
+                /** @var Value $discountAttrValue */
+                $discountAttrValue = $this->faker->randomElement($discountAttribute->getAttributeValues());
+
+                $constraintGroup->addConstraint((new Constraint())->setAttributeValue($discountAttrValue));
+            } elseif($discountTypeIndex < 2) {
+                $constraintGroup->addConstraint((new Constraint())->setMinOrderAmount(mt_rand(500, 5000)));
+            }
+
+            $constraintGroups[] = $constraintGroup;
+
+            $appliesOn = match(true) {
+                $discountTypeIndex < 3 => DiscountAppliesOnEnum::ORDER,
+                $discountTypeIndex < 7 => DiscountAppliesOnEnum::CHEAPEST_ELIGIBLE_PRODUCT,
+                default => DiscountAppliesOnEnum::ALL_ELIGIBLE_PRODUCTS
+            };
+
+            $discountMethod = match($discountTypeIndex) {
+                1, 7, 8, 9 => "percentage",
+                2 => "fixed",
+                default => $this->faker->boolean() ? "percentage" : "fixed"
+            };
+
+            if($discountMethod === "fixed") {
+                /** @var int $maxFixedDiscount */
+                /** @noinspection PhpUndefinedVariableInspection */
+                $maxFixedDiscount = match($discountTypeIndex) {
+                    3, 4, 6 => $discountProduct->getPriceTtc(),
+                    5 => min(array_map(fn($product): int => $product->getPriceTtc(), $discountProducts)),
+                    default => 5000
+                };
+            }
+
+            $priority = match($discountTypeIndex) {
+                8, 9 => -3,
+                7 => -2,
+                5 => -1,
+                0 => 1,
+                2, 6 => 2,
+                3 => 3,
+                default => 0
+            };
+
+            $discount = new Discount();
+            $discount->setAppliesOn($appliesOn)
+                ->setCode($this->faker->boolean() ? $this->faker->regexify("[A-Z0-9]{5,16}") : null)
+                ->setApplyAutomatically($discount->getCode() ? $this->faker->boolean(20) : true)
+                ->setEnabled($this->faker->boolean(75))
+                ->setLabel(substr(substr($this->faker->sentence(4), 0, -1), 0, 32))
+                ->setConditions($this->faker->boolean(80) ? $this->faker->text(300) : null)
+                ->setStartAt($this->faker->boolean(80) ? null : $this->faker->dateTimeBetween(in_array($discountTypeIndex, [2, 3]) ? $discountUser->getFirstLogin() : "-5 years", "-15 days"))
+                ->setEndAt($this->faker->boolean($discount->getStartAt() ? 90 : 50) ? $this->faker->dateTimeBetween($discount->getStartAt() ?? "-5 years", "-1 day") : null)
+                ->setQuantity($this->faker->boolean ? -1 : (in_array($discountTypeIndex, [2, 3]) ? 1 : mt_rand(1, 10)))
+                ->setMaxDiscountAmount($discountTypeIndex === 1 ? mt_rand(500, 2500) : null)
+                ->setMaxEligibleItemQuantityInCart(in_array($discountTypeIndex, [3, 4, 5, 6]) ? 1 : null)
+                ->setPercentageDiscount($discountMethod === "percentage" ? mt_rand(5, 75) : null)
+                ->setFixedDiscount($discountMethod === "fixed" ? mt_rand(200, $maxFixedDiscount) : null)
+                ->setPriority($priority)
+            ;
+
+            foreach($constraintGroups as $constraintGroup) {
+                $discount->addConstraintGroup($constraintGroup);
+            }
+
+            $discounts[] = $discount;
+            $discountsByType[$discountTypeIndex][] = $discount;
+            $manager->persist($discount);
+        }
 
         // ----- Order ----- \\
 
