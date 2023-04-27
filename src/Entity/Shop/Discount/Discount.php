@@ -79,6 +79,10 @@ class Discount
 
     #[ORM\Column(options: ["default" => false])]
     #[Assert\NotBlank]
+    private ?bool $applyAutomatically = null;
+
+    #[ORM\Column(options: ["default" => false])]
+    #[Assert\NotBlank]
     private ?bool $enabled = null;
 
     #[ORM\OneToMany(mappedBy: 'discount', targetEntity: ConstraintGroup::class, orphanRemoval: true)]
@@ -92,6 +96,7 @@ class Discount
 
     public function __construct()
     {
+        $this->applyAutomatically = false;
         $this->enabled = false;
         $this->constraintGroups = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
@@ -254,6 +259,18 @@ class Discount
     public function setQuantity(int $quantity): self
     {
         $this->quantity = $quantity;
+
+        return $this;
+    }
+
+    public function isApplyAutomatically(): ?bool
+    {
+        return $this->applyAutomatically;
+    }
+
+    public function setApplyAutomatically(bool $applyAutomatically): self
+    {
+        $this->applyAutomatically = $applyAutomatically;
 
         return $this;
     }
