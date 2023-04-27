@@ -13,7 +13,7 @@ enum StatusEnum: string
     case DELIVERY_SHIPPED = "Expédié";
     case DELIVERY_PLANNED = "Livraison planifiée"; // À n'utiliser que si l'expédition ne passe pas par un transporteur, sinon le suivi du transporteur remplace ce statut
     case DELIVERY_ONGOING = "Livraison en cours"; // À n'utiliser que si l'expédition ne passe pas par un transporteur, sinon le suivi du transporteur remplace ce statut
-    case DELIVERY_DONE = "Livré"; // A utiliser pour les produits physiques ou les produits dématérialisés qui doivent être "livrés" et pas "activés" (ex. : clés de jeux)
+    case DELIVERY_DONE = "Livré"; // À utiliser pour les produits physiques ou les produits dématérialisés qui doivent être "livrés" et pas "activés" (ex. : clés de jeux)
     case DELIVERY_RETURNED_TO_SENDER = "Retourné à l'expéditeur";
 
     case WITHDRAWAL_REQUEST_SENT = "Demande de rétractation envoyée";

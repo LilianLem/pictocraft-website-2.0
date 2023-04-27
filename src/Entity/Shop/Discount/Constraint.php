@@ -21,6 +21,33 @@ use Symfony\Component\Validator\Constraints as Assert;
     ignoreNull: true,
     message: "L'un des éléments renseignés est déjà pris en compte dans ce groupe de contraintes",
 )]
+#[Assert\When(
+    expression: "this.getMinProductPrice() && this.getMaxProductPrice()",
+    constraints: [
+        new Assert\Expression(
+            "this.getMaxProductPrice() > this.getMinProductPrice()",
+            message: "Le prix maximum du produit doit être supérieur au prix minimum"
+        )
+    ]
+)]
+#[Assert\When(
+    expression: "this.getMinOrderAmount() && this.getMaxOrderAmount()",
+    constraints: [
+        new Assert\Expression(
+            "this.getMaxOrderAmount() > this.getMinOrderAmount()",
+            message: "Le montant maximum de la commande doit être supérieur au montant minimum"
+        )
+    ]
+)]
+#[Assert\When(
+    expression: "this.getMinQuantity() && this.getMaxQuantity()",
+    constraints: [
+        new Assert\Expression(
+            "this.getMaxQuantity() > this.getMinQuantity()",
+            message: "La quantité maximale doit être supérieur à la quantité minimale"
+        )
+    ]
+)]
 class Constraint
 {
     #[ORM\Id]
@@ -48,22 +75,18 @@ class Constraint
     #[ORM\ManyToOne]
     private ?Role $role = null;
 
-    // TODO : contrainte à ajouter pour que la valeur de cette propriété soit inférieure à celle de maxProductPrice
     #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "Le prix minimum du produit doit être supérieur à 0€. S'il n'y en a pas, laissez ce champ vide")]
     private ?int $minProductPrice = null;
 
-    // TODO : contrainte à ajouter pour que la valeur de cette propriété soit supérieure à celle de minProductPrice
     #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "Le prix maximum du produit doit être supérieur à 0€. S'il n'y en a pas, laissez ce champ vide")]
     private ?int $maxProductPrice = null;
 
-    // TODO : contrainte à ajouter pour que la valeur de cette propriété soit inférieure à celle de maxOrderAmount
     #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "Le montant minimum de la commande doit être supérieur à 0€. S'il n'y en a pas, laissez ce champ vide")]
     private ?int $minOrderAmount = null;
 
-    // TODO : contrainte à ajouter pour que la valeur de cette propriété soit supérieure à celle de minOrderAmount
     #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "Le montant maximum de la commande doit être supérieur à 0€. S'il n'y en a pas, laissez ce champ vide")]
     private ?int $maxOrderAmount = null;

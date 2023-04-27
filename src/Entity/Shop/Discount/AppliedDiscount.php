@@ -53,11 +53,23 @@ class AppliedDiscount
 
     #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "La réduction fixe doit être supérieure à 0€. S'il s'agit d'un pourcentage de réduction, laissez ce champ vide")]
+    #[Assert\When(
+        expression: "this.getPercentageDiscount()",
+        constraints: [
+            new Assert\Blank(message: "Impossible d'appliquer une réduction fixe si un pourcentage de réduction est déjà défini. Laissez vide l'un des deux champs")
+        ]
+    )]
     private ?int $fixedDiscount = null;
 
     #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "Le pourcentage de réduction doit être supérieur à 0%. S'il s'agit d'une réduction fixe, laissez ce champ vide")]
     #[Assert\LessThanOrEqual(100, message: "Le pourcentage de réduction ne peut pas dépasser 100%")]
+    #[Assert\When(
+        expression: "this.getFixedDiscount()",
+        constraints: [
+            new Assert\Blank(message: "Impossible d'appliquer un pourcentage de réduction si une réduction fixe est déjà définie. Laissez vide l'un des deux champs")
+        ]
+    )]
     private ?int $percentageDiscount = null;
 
     // Total discount amount (item quantity is used if >1)

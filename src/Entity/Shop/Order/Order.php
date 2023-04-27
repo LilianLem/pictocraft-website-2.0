@@ -73,7 +73,7 @@ class Order
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderItem::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $items;
 
-    #[ORM\OneToMany(mappedBy: 'order', targetEntity: AppliedDiscount::class)]
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: AppliedDiscount::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $appliedDiscounts;
 
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: Status::class, orphanRemoval: true, cascade: ["persist", "remove"])]

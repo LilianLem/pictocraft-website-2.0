@@ -14,6 +14,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: SurveyRepository::class)]
 #[ORM\Table(name: 'survey_survey')]
 #[UniqueEntity("slug", message: "Ce slug est déjà utilisé")]
+#[Assert\Expression(
+    "this.getEndAt() > this.getStartAt()",
+    message: "La date de fin doit être ultérieure à la date de début"
+)]
 class Survey
 {
     #[ORM\Id]

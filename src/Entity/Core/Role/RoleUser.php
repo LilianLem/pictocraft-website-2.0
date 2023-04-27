@@ -17,6 +17,15 @@ use Symfony\Component\Validator\Constraints as Assert;
     errorPath: "role",
     message: "Cet utilisateur possède déjà ce rôle",
 )]
+#[Assert\When(
+    expression: "this.getStartAt() && this.getEndAt()",
+    constraints: [
+        new Assert\Expression(
+            "this.getEndAt() > this.getStartAt()",
+            message: "La date de fin doit être ultérieure à la date de début"
+        )
+    ]
+)]
 class RoleUser
 {
     #[ORM\Id]

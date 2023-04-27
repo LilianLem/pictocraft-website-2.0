@@ -85,7 +85,7 @@ class OrderItem
     #[ORM\OneToMany(mappedBy: 'orderItem', targetEntity: GameKey::class)]
     private Collection $gameKeys;
 
-    #[ORM\OneToMany(mappedBy: 'orderItem', targetEntity: AppliedDiscount::class)]
+    #[ORM\OneToMany(mappedBy: 'orderItem', targetEntity: AppliedDiscount::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $appliedDiscounts;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -134,7 +134,7 @@ class OrderItem
         return $this->product;
     }
 
-    public function setProduct(Product $product): self
+    public function setProduct(?Product $product): self
     {
         $this->product = $product;
 

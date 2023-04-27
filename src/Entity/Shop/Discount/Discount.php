@@ -12,10 +12,18 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
-// TODO: prevent adding a discount with fixedDiscount & percentageDiscount set at the same time
 #[ORM\Entity(repositoryClass: DiscountRepository::class)]
 #[ORM\Table(name: 'shop_discount')]
 #[UniqueEntity("code", message: "Ce code est déjà utilisé")]
+#[Assert\When(
+    expression: "this.getStartAt() && this.getEndAt()",
+    constraints: [
+        new Assert\Expression(
+            "this.getEndAt() > this.getStartAt()",
+            message: "La date de fin doit être ultérieure à la date de début"
+        )
+    ]
+)]
 class Discount
 {
     #[ORM\Id]
@@ -41,19 +49,31 @@ class Discount
 
     #[ORM\Column(length: 16, nullable: true, unique: true)]
     #[Assert\Length(min: 3, max: 16, minMessage: "Le code doit faire au minimum {{ limit }} caractères", maxMessage: "Le code ne doit pas dépasser {{ limit }} caractères")]
+    #[Assert\Regex('/^[A-Z\d]+$/', message: "Le code ne peut être composé que de majuscules non accentuées et de chiffres")]
     private ?string $code = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "La réduction fixe doit être supérieure à 0€. S'il s'agit d'un pourcentage de réduction, laissez ce champ vide")]
+    #[Assert\When(
+        expression: "this.getPercentageDiscount()",
+        constraints: [
+            new Assert\Blank(message: "Impossible d'appliquer une réduction fixe si un pourcentage de réduction est déjà défini. Laissez vide l'un des deux champs")
+        ]
+    )]
     private ?int $fixedDiscount = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "Le pourcentage de réduction doit être supérieur à 0%. S'il s'agit d'une réduction fixe, laissez ce champ vide")]
     #[Assert\LessThanOrEqual(100, message: "Le pourcentage de réduction ne peut pas dépasser 100%")]
+    #[Assert\When(
+        expression: "this.getFixedDiscount()",
+        constraints: [
+            new Assert\Blank(message: "Impossible d'appliquer un pourcentage de réduction si une réduction fixe est déjà définie. Laissez vide l'un des deux champs")
+        ]
+    )]
     private ?int $percentageDiscount = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    #[Assert\NotBlank]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Assert\DateTime]
     private ?DateTimeInterface $startAt = null;
 
@@ -61,7 +81,8 @@ class Discount
     #[Assert\DateTime]
     private ?DateTimeInterface $endAt = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(options: ["default" => 0])]
+    #[Assert\NotBlank]
     private ?int $priority = null;
 
     #[ORM\Column(nullable: true, options: ["unsigned" => true])]
@@ -69,7 +90,7 @@ class Discount
     private ?int $maxDiscountAmount = null;
 
     #[ORM\Column(nullable: true, options: ["unsigned" => true])]
-    #[Assert\PositiveOrZero(message: "La quantité maximale d'articles éligibles dans le panier ne peut pas être négative. S'il n'y a pas de limite, laissez ce champ vide")]
+    #[Assert\Positive(message: "La quantité maximale d'articles éligibles dans le panier ne peut pas être négative. S'il n'y a pas de limite, laissez ce champ vide")]
     private ?int $maxEligibleItemQuantityInCart = null;
 
     #[ORM\Column]
@@ -85,7 +106,7 @@ class Discount
     #[Assert\NotBlank]
     private ?bool $enabled = null;
 
-    #[ORM\OneToMany(mappedBy: 'discount', targetEntity: ConstraintGroup::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'discount', targetEntity: ConstraintGroup::class, orphanRemoval: true, cascade: ["persist", "remove"])]
     private Collection $constraintGroups;
 
     #[ORM\OneToMany(mappedBy: 'discount', targetEntity: AppliedDiscount::class)]
@@ -99,6 +120,7 @@ class Discount
 
     public function __construct()
     {
+        $this->priority = 0;
         $this->applyAutomatically = false;
         $this->enabled = false;
         $this->constraintGroups = new ArrayCollection();
@@ -178,6 +200,10 @@ class Discount
 
     public function setFixedDiscount(?int $fixedDiscount): self
     {
+        if(is_int($fixedDiscount) && $this->getPercentageDiscount()) {
+            throw new Exception("Impossible de définir une réduction fixe si un pourcentage de réduction est déjà appliqué.");
+        }
+
         $this->fixedDiscount = $fixedDiscount;
 
         return $this;
@@ -190,6 +216,10 @@ class Discount
 
     public function setPercentageDiscount(?int $percentageDiscount): self
     {
+        if(is_int($percentageDiscount) && $this->getFixedDiscount()) {
+            throw new Exception("Impossible de définir un pourcentage de réduction si une réduction fixe est déjà appliquée.");
+        }
+
         $this->percentageDiscount = $percentageDiscount;
 
         return $this;
@@ -200,7 +230,7 @@ class Discount
         return $this->startAt;
     }
 
-    public function setStartAt(DateTimeInterface $startAt): self
+    public function setStartAt(?DateTimeInterface $startAt): self
     {
         $this->startAt = $startAt;
 
