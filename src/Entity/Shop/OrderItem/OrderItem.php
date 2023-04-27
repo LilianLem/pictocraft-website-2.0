@@ -5,6 +5,7 @@ namespace App\Entity\Shop\OrderItem;
 use App\Entity\Core\User\User;
 use App\Entity\Shop\Delivery\Delivery;
 use App\Entity\Shop\Discount\AppliedDiscount;
+use App\Entity\Shop\DiscountableEntityInterface;
 use App\Entity\Shop\GameKey\GameKey;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\Product;
@@ -28,7 +29,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     errorPath: "product",
     message: "Cet article est déjà présent dans la commande",
 )]
-class OrderItem
+class OrderItem implements DiscountableEntityInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -403,6 +404,26 @@ class OrderItem
                 $appliedDiscount->setOrderItem(null);
             }
         }
+
+        return $this;
+    }
+
+    /** Warning: this operation is irreversible and updates total OrderItem amount! */
+    public function removeAllAppliedDiscounts(): self
+    {
+        if($this->getAppliedDiscounts()->isEmpty()) {
+            return $this;
+        }
+
+        foreach($this->getAppliedDiscounts() as $appliedDiscount) {
+            // set the owning side to null (unless already changed)
+            if ($appliedDiscount->getOrderItem() === $this) {
+                $appliedDiscount->setOrderItem(null);
+            }
+        }
+
+        $this->getAppliedDiscounts()->clear();
+        $this->updateTotalAmountTtc();
 
         return $this;
     }

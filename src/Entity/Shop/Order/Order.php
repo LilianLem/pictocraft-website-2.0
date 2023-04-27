@@ -8,6 +8,7 @@ use App\Entity\External\Geo\France\CommunePostalData;
 use App\Entity\External\Vat\Value;
 use App\Entity\External\Vat\VatRate;
 use App\Entity\Shop\Discount\AppliedDiscount;
+use App\Entity\Shop\DiscountableEntityInterface;
 use App\Entity\Shop\OrderItem\OrderItem;
 use App\Entity\Shop\Payment\Payment;
 use App\Repository\Shop\Order\OrderRepository;
@@ -24,7 +25,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: 'shop_order')]
 #[UniqueEntity("reference", message: "Cette référence est déjà utilisée")]
-class Order
+class Order implements DiscountableEntityInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -289,9 +290,9 @@ class Order
 
         if($this->getAppliedDiscounts()->isEmpty()) {
             $calculateWithOrderDiscounts = false;
-            $orderDiscounts = $this->getDiscountsOnOrderSubtotal();
         } else {
             $calculateWithOrderDiscounts = true;
+            $orderDiscounts = $this->getDiscountsOnOrderSubtotal();
         }
 
         $vatRates = $this->getItemsVatRates();
@@ -299,21 +300,33 @@ class Order
 
         foreach($vatRates as $vatRate) {
             $amount = $this->getTotalAmountTtcBeforeOrderDiscounts($vatRate);
-            if($calculateWithOrderDiscounts) $ttcTotalForVatRate = round($amount - $orderDiscounts * ($amount / $orderTotal));
+
+            if($calculateWithOrderDiscounts && $amount) {
+                /** @noinspection PhpUndefinedVariableInspection */
+                $ttcTotalForVatRate = round($amount - $orderDiscounts * ($amount / $orderTotal));
+            }
+
             $vatRateValue = $vatRate->getValueAtDate($this->getCreatedAt() ?? new DateTime());
 
+            /** @noinspection PhpUndefinedVariableInspection */
             $totalsPerVatRate[] = array(
                 "vatRateValue" => $vatRateValue,
-                "ttc" => $calculateWithOrderDiscounts ? $ttcTotalForVatRate : $amount,
-                "ht" => $calculateWithOrderDiscounts ? $vatRateValue->getHtPriceFromTtc($ttcTotalForVatRate) : $this->getTotalAmountHtBeforeOrderDiscounts($vatRate)
+                "ttc" => ($calculateWithOrderDiscounts && $amount) ? $ttcTotalForVatRate : $amount,
+                "ht" => $amount ? ( $calculateWithOrderDiscounts ? $vatRateValue->getHtPriceFromTtc($ttcTotalForVatRate) : $this->getTotalAmountHtBeforeOrderDiscounts($vatRate) ) : 0
             );
         }
 
         return $totalsPerVatRate;
     }
 
-    public function updateTotals(): self
+    public function updateTotals(bool $updateItemTotalsRecursively = false): self
     {
+        if($updateItemTotalsRecursively && !$this->getItems()->isEmpty()) {
+            foreach($this->getItems() as $item) {
+                $item->updateTotalAmountTtc();
+            }
+        }
+
         return $this->updateBaseSubtotalTtc()->updateTotalAmountTtc()->updateTotalAmountHt();
     }
 
@@ -505,6 +518,32 @@ class Order
                 $appliedDiscount->setOrder(null);
             }
         }
+
+        return $this;
+    }
+
+    /** Warning: this operation is irreversible and updates Order and OrderItem totals! */
+    public function removeAllAppliedDiscounts(bool $removeAllOrderItemAppliedDiscountsRecursively = false): self
+    {
+        if($removeAllOrderItemAppliedDiscountsRecursively && !$this->getItems()->isEmpty()) {
+            foreach($this->getItems() as $item) {
+                $item->removeAllAppliedDiscounts();
+            }
+        }
+
+        if($this->getAppliedDiscounts()->isEmpty()) {
+            return $this;
+        }
+
+        foreach($this->getAppliedDiscounts() as $appliedDiscount) {
+            // set the owning side to null (unless already changed)
+            if ($appliedDiscount->getOrder() === $this) {
+                $appliedDiscount->setOrder(null);
+            }
+        }
+
+        $this->getAppliedDiscounts()->clear();
+        $this->updateTotals();
 
         return $this;
     }

@@ -3,12 +3,19 @@
 namespace App\Entity\Shop\Discount;
 
 use App\Entity\Core\Role\Role;
+use App\Entity\Core\Role\RoleUser;
 use App\Entity\Core\User\User;
 use App\Entity\Shop\Attribute\Value;
 use App\Entity\Shop\Category;
+use App\Entity\Shop\Order\Order;
+use App\Entity\Shop\OrderItem\OrderItem;
 use App\Entity\Shop\Product;
+use App\Entity\Shop\ProductCategory;
 use App\Repository\Shop\Discount\ConstraintRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Exception;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -91,6 +98,7 @@ class Constraint
     #[Assert\Positive(message: "Le montant maximum de la commande doit être supérieur à 0€. S'il n'y en a pas, laissez ce champ vide")]
     private ?int $maxOrderAmount = null;
 
+    // La quantité s'entend par le total des articles correspondant à la contrainte (ex. : s'il y a une contrainte de catégorie, tous les articles de cette catégorie sont pris en compte)
     #[ORM\Column(options: ["unsigned" => true], nullable: true)]
     #[Assert\Positive(message: "La quantité minimale doit être supérieure à 0")]
     private ?int $minQuantity = null;
@@ -246,5 +254,67 @@ class Constraint
         $this->maxQuantity = $maxQuantity;
 
         return $this;
+    }
+
+    /**
+     * @return Collection<int, OrderItem>|bool
+     */
+    public function getOrderCompliance(Order $order, bool $returnCompliantItems = false): Collection|bool
+    {
+        if(!$this->checkOrderRules($order)) return false;
+
+        $matchingItems = $this->filterOutOrderItemsByItemRules($order);
+
+        return $returnCompliantItems ? $matchingItems : !$matchingItems->isEmpty();
+    }
+
+    private function checkOrderRules(Order $order): bool
+    {
+        if($this->getMinOrderAmount() && $order->getTotalAmountTtc() < $this->getMinOrderAmount()) return false;
+
+        if($this->getMaxOrderAmount() && $order->getTotalAmountTtc() > $this->getMaxOrderAmount()) return false;
+
+        if(($this->getUser() || $this->getRole()) && !$order->getUser()) return false;
+
+        if($this->getUser() && $order->getUser()->getId() !== $this->getUser()->getId()) return false;
+
+        if($this->getRole() && !$order->getUser()->getFullRoles()->exists(fn(int $key, RoleUser $roleUser) => $roleUser->getRole()->getId() === $this->getRole()->getId())) return false;
+
+        return true;
+    }
+
+    /**
+     * @return Collection<int, OrderItem>
+     */
+    private function filterOutOrderItemsByItemRules(Order $order): Collection
+    {
+        if($order->getItems()->isEmpty()) throw new Exception("Impossible de vérifier l'éligibilité de la commande à une réduction, car il n'y a aucun article dans la commande");
+
+        $matchingItems = $order->getItems();
+
+        if($this->getProduct()) $matchingItems = $matchingItems->filter(fn(OrderItem $item) => $item->getProduct()->getId() === $this->getProduct()->getId());
+
+        if($this->getCategory()) $matchingItems = $matchingItems->filter(fn(OrderItem $item) => $item->getProduct()->getProductCategories()->exists(fn(int $key, ProductCategory $pCategory) => $pCategory->getCategory()->getId() === $this->getCategory()->getId()));
+
+        if($this->getAttributeValue()) $matchingItems = $matchingItems->filter(fn(OrderItem $item) => $item->getProduct()->getAttributes()->exists(fn(int $key, Value $attrValue) => $attrValue->getId() === $this->getAttributeValue()->getId()));
+
+        if($this->getMinProductPrice()) $matchingItems = $matchingItems->filter(fn(OrderItem $item) => $item->getProduct()->getPriceTtc() >= $this->getMinProductPrice());
+
+        if($this->getMaxProductPrice()) $matchingItems = $matchingItems->filter(fn(OrderItem $item) => $item->getProduct()->getPriceTtc() <= $this->getMaxProductPrice());
+
+        if($matchingItems->isEmpty()) return new ArrayCollection();
+
+        if($this->getMinQuantity() || $this->getMaxQuantity()) {
+            $totalMatchingItemsQuantity = $matchingItems->reduce(fn(int $sum, OrderItem $item) => $sum + $item->getQuantity());
+
+            if(
+                ($this->getMinQuantity() && $totalMatchingItemsQuantity < $this->getMinQuantity())
+                || ($this->getMaxQuantity() && $totalMatchingItemsQuantity > $this->getMaxQuantity())
+            ) {
+                return new ArrayCollection();
+            }
+        }
+
+        return $matchingItems;
     }
 }

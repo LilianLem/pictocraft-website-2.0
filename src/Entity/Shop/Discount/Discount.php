@@ -2,13 +2,19 @@
 
 namespace App\Entity\Shop\Discount;
 
+use App\Entity\Core\User\User;
+use App\Entity\Shop\Order\Order;
+use App\Entity\Shop\OrderItem\OrderItem;
 use App\Entity\Shop\WalletTransaction;
 use App\Repository\Shop\Discount\DiscountRepository;
+use Carbon\Carbon;
 use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ReadableCollection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Exception;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -81,6 +87,7 @@ class Discount
     #[Assert\DateTime]
     private ?DateTimeInterface $endAt = null;
 
+    // Order where appliesOn = ORDER are always applied after others regardless of priority value
     #[ORM\Column(options: ["default" => 0])]
     #[Assert\NotBlank]
     private ?int $priority = null;
@@ -92,6 +99,10 @@ class Discount
     #[ORM\Column(nullable: true, options: ["unsigned" => true])]
     #[Assert\Positive(message: "La quantité maximale d'articles éligibles dans le panier ne peut pas être négative. S'il n'y a pas de limite, laissez ce champ vide")]
     private ?int $maxEligibleItemQuantityInCart = null;
+
+    #[ORM\Column(nullable: true, options: ["unsigned" => true])]
+    #[Assert\Positive(message: "Le nombre d'utilisations maximal par utilisateur ne peut pas être négatif. S'il n'y a pas de limite, laissez ce champ vide")]
+    private ?int $maxUsesPerUser = null;
 
     #[ORM\Column]
     #[Assert\GreaterThanOrEqual(-1, message: "La quantité ne peut pas être inférieure à -1 (-1 = infini, 0 = plus utilisable)")]
@@ -285,6 +296,18 @@ class Discount
         return $this;
     }
 
+    public function getMaxUsesPerUser(): ?int
+    {
+        return $this->maxUsesPerUser;
+    }
+
+    public function setMaxUsesPerUser(?int $maxUsesPerUser): self
+    {
+        $this->maxUsesPerUser = $maxUsesPerUser;
+
+        return $this;
+    }
+
     public function getQuantity(): ?int
     {
         return $this->quantity;
@@ -379,6 +402,76 @@ class Discount
         $this->walletTransaction = $walletTransaction;
 
         return $this;
+    }
+
+    public function isAvailable(?DateTimeInterface $date = null): bool
+    {
+        if(!$this->isEnabled() || !$this->getQuantity()) return false;
+
+        $dateToCheck = new Carbon($date);
+        if(
+            (!is_null($this->getStartAt()) && $dateToCheck->isBefore($this->getStartAt()))
+            ||
+            (!is_null($this->getEndAt()) && $dateToCheck->isAfter($this->getEndAt()))
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function isOrderEligible(Order $order, ?DateTimeInterface $date = null): bool
+    {
+        if(!$this->isAvailable($date)) return false;
+
+        if(
+            $this->getMaxUsesPerUser()
+            && (!$order->getUser() || $this->hasMaxUsesBeenReached($order->getUser()))
+        ) {
+            return false;
+        }
+
+        if($this->getConstraintGroups()->isEmpty()) return true;
+
+        foreach($this->getConstraintGroups() as $constraintGroup) {
+            if(!$constraintGroup->isOrderCompliant($order)) return false;
+        }
+
+        return true;
+    }
+
+    public function hasMaxUsesBeenReached(User $user): bool
+    {
+        if(!$this->getMaxUsesPerUser()) return true;
+
+        return $this->getUserHistory($user)?->getNumberOfUses() === $this->getMaxUsesPerUser();
+    }
+
+    /**
+     * @return ReadableCollection<int, OrderItem>
+     */
+    public function getEligibleItemsInOrder(Order $order, ?DateTimeInterface $date = null): ReadableCollection
+    {
+        if(!$this->isAvailable($date)) return new ArrayCollection();
+
+        if($order->getItems()->isEmpty()) throw new Exception("Impossible de vérifier l'éligibilité de la commande à une réduction, car il n'y a aucun article dans la commande");
+
+        if($this->getConstraintGroups()->isEmpty()) return $order->getItems();
+
+        $eligibleItems = $order->getItems();
+
+        foreach($this->getConstraintGroups() as $constraintGroup) {
+            $groupCompliantItems = $constraintGroup->getCompliantItems($order);
+            if($groupCompliantItems->isEmpty()) return new ArrayCollection();
+
+            $eligibleItems = $eligibleItems->filter(fn(OrderItem $item) => $groupCompliantItems->findFirst(
+                fn(int $key, OrderItem $compliantItem) => $item->getId() === $compliantItem->getId()
+            ));
+
+            if($eligibleItems->isEmpty()) return $eligibleItems;
+        }
+
+        return $eligibleItems;
     }
 
     /**
