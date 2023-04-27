@@ -94,12 +94,16 @@ class Discount
     #[ORM\OneToOne(mappedBy: 'generatedDiscount', cascade: ['persist', 'remove'])]
     private ?WalletTransaction $walletTransaction = null;
 
+    #[ORM\OneToMany(mappedBy: 'discount', targetEntity: DiscountUserHistory::class, orphanRemoval: true)]
+    private Collection $usersHistory;
+
     public function __construct()
     {
         $this->applyAutomatically = false;
         $this->enabled = false;
         $this->constraintGroups = new ArrayCollection();
         $this->appliedDiscounts = new ArrayCollection();
+        $this->usersHistory = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -343,6 +347,45 @@ class Discount
         }
 
         $this->walletTransaction = $walletTransaction;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, DiscountUserHistory>
+     */
+    public function getUsersHistory(): Collection
+    {
+        return $this->usersHistory;
+    }
+
+    public function getUserHistory(User $user): ?DiscountUserHistory
+    {
+        $usersHistory = $this->getUsersHistory();
+
+        if($usersHistory->isEmpty()) return null;
+
+        return $usersHistory->findFirst(fn(int $key, DiscountUserHistory $history) => $history->getUser() === $user);
+    }
+
+    public function addUserHistory(DiscountUserHistory $userHistory): self
+    {
+        if (!$this->usersHistory->contains($userHistory)) {
+            $this->usersHistory->add($userHistory);
+            $userHistory->setDiscount($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserHistory(DiscountUserHistory $userHistory): self
+    {
+        if ($this->usersHistory->removeElement($userHistory)) {
+            // set the owning side to null (unless already changed)
+            if ($userHistory->getDiscount() === $this) {
+                $userHistory->setDiscount(null);
+            }
+        }
 
         return $this;
     }

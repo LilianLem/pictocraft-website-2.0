@@ -12,6 +12,8 @@ use App\Entity\Core\Role\RoleUser;
 use App\Entity\Modules\SecretSanta\Participant;
 use App\Entity\Modules\Survey\SurveyUserAnonymous;
 use App\Entity\Modules\Survey\Entry;
+use App\Entity\Shop\Discount\Discount;
+use App\Entity\Shop\Discount\DiscountUserHistory;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\Order\StatusEnum;
 use App\Entity\Shop\OrderItem\OrderItem;
@@ -168,6 +170,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'redeemedBy', targetEntity: RedemptionCode::class)]
     private Collection $redeemedCodes;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: DiscountUserHistory::class, orphanRemoval: true)]
+    private Collection $discountsHistory;
+
     public function __construct()
     {
         $this->warnings = 0;
@@ -188,6 +193,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->secretSantaParticipations = new ArrayCollection();
         $this->surveysAnsweredAnonymously = new ArrayCollection();
         $this->redeemedCodes = new ArrayCollection();
+        $this->discountsHistory = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -906,6 +912,45 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($redemptionCode->getRedeemedBy() === $this) {
                 $redemptionCode->setRedeemedBy(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, DiscountUserHistory>
+     */
+    public function getDiscountsHistory(): Collection
+    {
+        return $this->discountsHistory;
+    }
+
+    public function getDiscountHistory(Discount $discount): ?DiscountUserHistory
+    {
+        $discountsHistory = $this->getDiscountsHistory();
+
+        if($discountsHistory->isEmpty()) return null;
+
+        return $discountsHistory->findFirst(fn(int $key, DiscountUserHistory $history) => $history->getDiscount() === $discount);
+    }
+
+    public function addDiscountHistory(DiscountUserHistory $discountHistory): self
+    {
+        if (!$this->discountsHistory->contains($discountHistory)) {
+            $this->discountsHistory->add($discountHistory);
+            $discountHistory->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDiscountHistory(DiscountUserHistory $discountHistory): self
+    {
+        if ($this->discountsHistory->removeElement($discountHistory)) {
+            // set the owning side to null (unless already changed)
+            if ($discountHistory->getUser() === $this) {
+                $discountHistory->setUser(null);
             }
         }
 
