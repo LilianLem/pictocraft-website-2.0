@@ -20,6 +20,25 @@ body {
     main {
         padding: 20px;
         min-height: calc(100vh - 2 * var(--common-nav-size));
+
+        /* TODO: déplacer dans un fichier dédié à la page produit et repenser à la manière de faire */
+        h2#product-subtitle {
+            font-size: 1.5rem;
+        }
+        #product-final-price {
+            font-weight: bold;
+        }
+        .category-badges {
+            height: 24px;
+            overflow: hidden;
+        }
+        /* ------------- */
+
+        .breadcrumb {
+            .breadcrumb-item.active {
+                --mdb-breadcrumb-item-active-color: white;
+            }
+        }
     }
 
     footer {

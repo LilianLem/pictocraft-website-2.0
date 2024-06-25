@@ -25,7 +25,7 @@ class Value
     #[ORM\Column(options: ["unsigned" => true])]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'vatRateValues')]
+    #[ORM\ManyToOne(inversedBy: 'valueHistory')]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
     private ?VatRate $rate = null;

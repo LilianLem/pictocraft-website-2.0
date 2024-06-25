@@ -25,7 +25,7 @@ class DiscountUserHistory
     #[ORM\Column(options: ["unsigned" => true])]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'userHistories')]
+    #[ORM\ManyToOne(inversedBy: 'usersHistory')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Discount $discount = null;
 

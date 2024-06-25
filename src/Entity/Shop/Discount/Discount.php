@@ -5,6 +5,7 @@ namespace App\Entity\Shop\Discount;
 use App\Entity\Core\User\User;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\OrderItem\OrderItem;
+use App\Entity\Shop\Product;
 use App\Entity\Shop\WalletTransaction;
 use App\Repository\Shop\Discount\DiscountRepository;
 use Carbon\Carbon;
@@ -442,7 +443,27 @@ class Discount
         if($this->getConstraintGroups()->isEmpty()) return true;
 
         foreach($this->getConstraintGroups() as $constraintGroup) {
-            if(!$constraintGroup->isOrderCompliant($order)) return false;
+            if(!$constraintGroup->isObjectCompliant($order)) return false;
+        }
+
+        return true;
+    }
+
+    public function isProductEligible(Product $product, ?User $user = null): bool
+    {
+        if(!$this->isAvailable()) return false;
+
+        if(
+            $this->getMaxUsesPerUser()
+            && (!$user || $this->hasMaxUsesBeenReached($user))
+        ) {
+            return false;
+        }
+
+        if($this->getConstraintGroups()->isEmpty()) return true;
+
+        foreach($this->getConstraintGroups() as $constraintGroup) {
+            if(!$constraintGroup->isObjectCompliant($product, $user)) return false;
         }
 
         return true;

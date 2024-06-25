@@ -2,8 +2,10 @@
 
 namespace App\Entity\Shop\Discount;
 
+use App\Entity\Core\User\User;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\OrderItem\OrderItem;
+use App\Entity\Shop\Product;
 use App\Repository\Shop\Discount\ConstraintGroupRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -99,14 +101,20 @@ class ConstraintGroup
         return $this;
     }
 
-    public function isOrderCompliant(Order $order): bool
+    /**
+     * Warning: user param is only used when processing a Product object!
+     */
+    public function isObjectCompliant(Order|Product $object, ?User $user = null): bool
     {
         if($this->getConstraints()->isEmpty()) throw new Exception("Impossible de vérifier les contraintes de la réduction car un groupe de contraintes est vide");
 
         $allConstraintsNeeded = $this->getConstraintsNeeded() === 0;
         $satisfiedConstraints = 0;
         foreach($this->getConstraints() as $constraint) {
-            if($constraint->getOrderCompliance($order)) $satisfiedConstraints++;
+            if(
+                (get_class($object) === "App\Entity\Shop\Order\Order" && $constraint->getOrderCompliance($object))
+                || (get_class($object) === "App\Entity\Shop\Product" && $constraint->isProductCompliant($object, $user))
+            ) $satisfiedConstraints++;
             elseif($allConstraintsNeeded) return false;
 
             if($satisfiedConstraints === $this->getConstraintsNeeded()) return true;

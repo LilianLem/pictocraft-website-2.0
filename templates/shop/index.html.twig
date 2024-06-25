@@ -1,0 +1,26 @@
+{% extends "shop/base.html.twig" %}
+
+{% block body %}
+    <main class="pt-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path("home") }}">Accueil</a></li>
+            <li class="breadcrumb-item active">Boutique</li>
+        </ol>
+
+        <h1>Boutique</h1>
+
+        {% if categories is not empty %}
+            <div class="row">
+                {% for category in categories %}
+                    <div class="col-3">
+                        {% include "shop/category/_category-card.html.twig" with {"category": category} %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Il n'y a aucune catégorie !</p>
+        {% endif %}
+
+        {# TODO: produits mis en avant à part, puis produits de la catégorie par défaut #}
+    </main>
+{% endblock %}

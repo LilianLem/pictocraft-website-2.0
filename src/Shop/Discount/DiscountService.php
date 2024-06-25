@@ -2,12 +2,14 @@
 
 namespace App\Shop\Discount;
 
+use App\Entity\Core\User\User;
 use App\Entity\Shop\Discount\AppliedDiscount;
 use App\Entity\Shop\Discount\Discount;
 use App\Entity\Shop\Discount\DiscountAppliesOnEnum;
 use App\Entity\Shop\DiscountableEntityInterface;
 use App\Entity\Shop\Order\Order;
 use App\Entity\Shop\OrderItem\OrderItem;
+use App\Entity\Shop\Product;
 use App\Repository\Shop\Discount\DiscountRepository;
 use DateTimeInterface;
 use Doctrine\Common\Collections\ReadableCollection;
@@ -30,6 +32,47 @@ class DiscountService
     {
         $availableDiscounts = $this->discountRepository->findAvailable($appliedAutomatically);
         return array_filter($availableDiscounts, fn(Discount $discount) => $discount->isOrderEligible($order));
+    }
+
+    /** @return Discount[] */
+    private function getEligibleDiscountsForProductPricing(Product $product, ?User $user = null): array
+    {
+        $availableDiscounts = $this->discountRepository->findAvailable(true, DiscountAppliesOnEnum::ALL_ELIGIBLE_PRODUCTS);
+        return array_filter($availableDiscounts, fn(Discount $discount) => $discount->isProductEligible($product, $user));
+    }
+
+    /** @return Discount[] */
+    private function getFilteredEligibleDiscountsForProductPricing(Product $product, ?User $user = null): array
+    {
+        $eligibleDiscounts = $this->getEligibleDiscountsForProductPricing($product, $user);
+
+        if(empty($eligibleDiscounts)) {
+            return $eligibleDiscounts;
+        }
+
+        $eligibleDiscounts = $this->sort($eligibleDiscounts);
+
+        /** @var array<int, Discount> $filteredEligibleDiscounts */
+        $filteredEligibleDiscounts = [];
+
+        foreach($eligibleDiscounts as $discount) {
+            $incompatibleDiscounts = $discount->getIncompatibleDiscounts();
+            if(!empty($incompatibleDiscounts)) {
+                $valid = true;
+                foreach($incompatibleDiscounts as $iDiscount) {
+                    if(array_key_exists($iDiscount->getId(), $filteredEligibleDiscounts)) {
+                        $valid = false;
+                        break;
+                    }
+                }
+
+                if($valid) {
+                    $filteredEligibleDiscounts[$discount->getId()] = $discount;
+                }
+            }
+        }
+
+        return array_values($filteredEligibleDiscounts);
     }
 
     /** @return array<int, Discount> */
@@ -518,6 +561,14 @@ class DiscountService
                 if(!$discount->getPercentageDiscount()) {
                     $discountsCachePerUnit[$i]->setDiscountCalculationBasis($discountAmount);
                 }
+
+                // DEBUG ------------
+                if($discountAmount < 0) {
+                    print_r($discount);
+                    print_r($orderItem);
+                }
+                // DEBUG ------------
+
                 $discountsCachePerUnit[$i]->setDiscountedAmount($discountAmount);
 
                 if($discountRemainingEligibleItemQuantity) {
@@ -546,6 +597,70 @@ class DiscountService
             "itemDiscountsCache" => $itemDiscountsCache,
             "discountAlreadyAppliedAmount" => $discountAlreadyAppliedAmount,
             "discountRemainingEligibleItemQuantity" => $discountRemainingEligibleItemQuantity
+        ];
+    }
+
+    /** @return array{
+     *     discountsUsedForPricing: Discount[],
+     *     discountedPrice: int
+     * }
+     */
+    public function getProductDiscountInfo(Product $product, ?User $user = null): array {
+        $productDiscountInfo = [
+            "discountsUsedForPricing" => [],
+            "discountedPrice" => $product->getPriceTtc()
+        ];
+
+        if(!$product->getPriceTtc()) {
+            return $productDiscountInfo;
+        }
+
+        $eligibleDiscounts = $this->getFilteredEligibleDiscountsForProductPricing($product, $user);
+
+        if(empty($eligibleDiscounts)) {
+            return $productDiscountInfo;
+        }
+
+        $calculationBasis = $product->getPriceTtc();
+        foreach($eligibleDiscounts as $discount) {
+            $result = $this->processDiscountOnProductPrice($discount, $productDiscountInfo["discountedPrice"], $calculationBasis);
+
+            if($result["discountedPrice"] !== $productDiscountInfo["discountedPrice"]) {
+                $productDiscountInfo["discountsUsedForPricing"][] = $discount;
+                $productDiscountInfo["discountedPrice"] = $result["discountedPrice"];
+                $calculationBasis = $result["calculationBasis"];
+            }
+        }
+
+        return $productDiscountInfo;
+    }
+
+    /** @return array{
+     *     discountedPrice: int,
+     *     calculationBasis: int
+     * }
+     */
+    private function processDiscountOnProductPrice(Discount $discount, int $productCurrentDiscountedPrice, int $calculationBasis): array
+    {
+        if($discount->getAppliesOn() !== DiscountAppliesOnEnum::ALL_ELIGIBLE_PRODUCTS) {
+            throw new Exception("Impossible de calculer le montant de la réduction. Veuillez contacter l'administrateur");
+        }
+
+        $discountAmount = $this->calculateDiscountRawAmount($discount, $calculationBasis);
+
+        if($discountAmount > $productCurrentDiscountedPrice) {
+            $discountAmount = $productCurrentDiscountedPrice;
+        }
+
+        $discountedPrice = $productCurrentDiscountedPrice - $discountAmount;
+
+        if($discountAmount && !$discount->getPercentageDiscount()) {
+            $calculationBasis = $discountedPrice;
+        }
+
+        return [
+            "discountedPrice" => $discountedPrice,
+            "calculationBasis" => $calculationBasis
         ];
     }
 

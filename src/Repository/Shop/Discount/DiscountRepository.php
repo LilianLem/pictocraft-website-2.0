@@ -44,7 +44,7 @@ class DiscountRepository extends ServiceEntityRepository
     /**
      * @return Discount[] Returns an array of Discount objects
      */
-    public function findAvailable(?bool $appliedAutomatically = null): array
+    public function findAvailable(?bool $appliedAutomatically = null, ?DiscountAppliesOnEnum $onlyAppliesOn = null): array
     {
         $query = $this->createQueryBuilder("d")
             ->andWhere("d.enabled = :enabled")
@@ -59,6 +59,11 @@ class DiscountRepository extends ServiceEntityRepository
                 ->setParameter("applyAutomatically", $appliedAutomatically);
         }
 
+        if(!is_null($onlyAppliesOn)) {
+            $query->andWhere("d.appliesOn = :appliesOn")
+                ->setParameter("appliesOn", $onlyAppliesOn);
+        }
+
         $query->setParameter("enabled", true)
             ->setParameter("now", new DateTime())
             ->setParameter("quantity", 0)
@@ -68,21 +73,27 @@ class DiscountRepository extends ServiceEntityRepository
             ->addOrderBy("d.percentageDiscount", "DESC")
             ->addOrderBy("d.id", "ASC");
 
-        $orderDiscountsQuery = clone $query;
+        if(is_null($onlyAppliesOn)) {
+            $orderDiscountsQuery = clone $query;
 
-        $query->andWhere("d.appliesOn <> :appliesOn")
-            ->setParameter("appliesOn", DiscountAppliesOnEnum::ORDER);
+            $query->andWhere("d.appliesOn <> :appliesOn")
+                ->setParameter("appliesOn", DiscountAppliesOnEnum::ORDER);
 
-        $orderDiscountsQuery->andWhere("d.appliesOn = :appliesOn")
-            ->setParameter("appliesOn", DiscountAppliesOnEnum::ORDER);
+            $orderDiscountsQuery->andWhere("d.appliesOn = :appliesOn")
+                ->setParameter("appliesOn", DiscountAppliesOnEnum::ORDER);
+        }
 
         /** @var array $queryResult */
         $queryResult = $query->getQuery()->getResult();
 
-        /** @var array $orderDiscountsQueryResult */
-        $orderDiscountsQueryResult = $orderDiscountsQuery->getQuery()->getResult();
+        if(is_null($onlyAppliesOn)) {
+            /** @var array $orderDiscountsQueryResult */
+            $orderDiscountsQueryResult = $orderDiscountsQuery->getQuery()->getResult();
 
-        return array_merge($queryResult, $orderDiscountsQueryResult);
+            return array_merge($queryResult, $orderDiscountsQueryResult);
+        }
+
+        return($queryResult);
     }
 
 //    /**

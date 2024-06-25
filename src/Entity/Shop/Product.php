@@ -27,11 +27,12 @@ class Product
     #[ORM\Column(options: ["unsigned" => true])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 64)]
+    #[ORM\Column(length: 64, unique: true)]
     #[Assert\Length(min: 3, max: 64, minMessage: "Le nom doit faire au minimum {{ limit }} caractères", maxMessage: "Le nom ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
     private ?string $name = null;
 
+    // TODO: empêcher le slug d'être identique à une catégorie
     #[ORM\Column(length: 64, unique: true)]
     #[Assert\Length(max: 64, maxMessage: "Le slug ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
@@ -276,11 +277,23 @@ class Product
     }
 
     /**
+     * @param bool $onlyEnabled Does not apply to main category
      * @return Collection<int, ProductCategory>
      */
-    public function getProductCategories(): Collection
+    public function getProductCategories(bool $onlySecondary = false, bool $onlyEnabled = true): Collection
     {
-        return $this->productCategories;
+        if(!$onlySecondary && !$onlyEnabled) {
+            return $this->productCategories;
+        }
+
+        $condition = $onlySecondary && $onlyEnabled
+            ? fn(ProductCategory $pCategory): bool => !$pCategory->isMain() && $pCategory->getCategory()->isEnabled()
+            : ($onlyEnabled
+                ? fn(ProductCategory $pCategory): bool => $pCategory->isMain() || $pCategory->getCategory()->isEnabled()
+                : fn(ProductCategory $pCategory): bool => !$pCategory->isMain()
+            );
+
+        return $this->productCategories->filter(fn(ProductCategory $pCategory): bool => $condition($pCategory));
     }
 
     public function addProductCategory(ProductCategory $productCategory): self

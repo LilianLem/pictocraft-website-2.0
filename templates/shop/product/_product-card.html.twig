@@ -1,0 +1,23 @@
+<div class="card">
+  <img src="{% include "shop/product/_product-image-link.html.twig" with { "imageString": product.image } %}" class="img-fluid" alt="Image de {{ product.name }}" />
+  <div class="card-body">
+    <div class="product-categories category-badges mb-2">
+      {% include "shop/product/_product-category-badges.html.twig" with {"product": product} %}
+    </div>
+
+    <h4 class="card-title">{{ product.name }}</h4>
+
+    <p class="card-text">{{ product.description | u.truncate(200, "...", false) }}</p>
+
+    <p class="lead" id="product-price">
+      {% if product.priceTtc != preCartFinalPriceInfo.discountedPrice %}
+        <span class="me-1" id="product-base-price" aria-details="Prix d'origine">
+            <del>{{ product.priceTtc | amount }}</del>
+        </span>
+      {% endif %}
+      <span id="product-final-price" aria-details="Prix final">{{ preCartFinalPriceInfo.discountedPrice | amount }}</span>
+    </p>
+    <a href="{{ path("shop_details", productService.routeSlugs(product)) }}" class="btn btn-primary btn-sm">Détails</a>
+    <a href="#" class="btn btn-success btn-sm">Ajouter</a>
+  </div>
+</div>

@@ -261,9 +261,7 @@ class Constraint
      */
     public function getOrderCompliance(Order $order, bool $returnCompliantItems = false): Collection|bool
     {
-        if(!$this->checkOrderRules($order)) return false;
-
-        $matchingItems = $this->filterOutOrderItemsByItemRules($order);
+        $matchingItems = $this->checkOrderRules($order) ? $this->filterOutOrderItemsByItemRules($order) : new ArrayCollection();
 
         return $returnCompliantItems ? $matchingItems : !$matchingItems->isEmpty();
     }
@@ -316,5 +314,26 @@ class Constraint
         }
 
         return $matchingItems;
+    }
+
+    public function isProductCompliant(Product $product, ?User $user = null): bool
+    {
+        if($this->getProduct() && $product->getId() !== $this->getProduct()->getId()) return false;
+
+        if($this->getCategory() && !$product->getProductCategories()->exists(fn(int $key, ProductCategory $pCategory) => $pCategory->getCategory()->getId() === $this->getCategory()->getId())) return false;
+
+        if($this->getAttributeValue() && !$product->getAttributes()->exists(fn(int $key, Value $attrValue) => $attrValue->getId() === $this->getAttributeValue()->getId())) return false;
+
+        if($this->getMinProductPrice() && $product->getPriceTtc() < $this->getMinProductPrice()) return false;
+
+        if($this->getMaxProductPrice() && $product->getPriceTtc() > $this->getMaxProductPrice()) return false;
+
+        if(($this->getUser() || $this->getRole()) && !$user) return false;
+
+        if($this->getUser() && $user->getId() !== $this->getUser()->getId()) return false;
+
+        if($this->getRole() && !$user->getFullRoles()->exists(fn(int $key, RoleUser $roleUser) => $roleUser->getRole()->getId() === $this->getRole()->getId())) return false;
+
+        return true;
     }
 }

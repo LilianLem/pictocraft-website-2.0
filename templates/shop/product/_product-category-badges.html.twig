@@ -1,0 +1,9 @@
+<a href="{{ path("shop_details", categoryService.routeSlugs(product.mainCategory)) }}" id="product-main-category" class="product-category">
+    <span class="badge bg-primary me-1">{{ product.mainCategory.name }}</span>
+</a>
+{% for pCategory in product.productCategories(true) %}
+    <a href="{{ path("shop_details", categoryService.routeSlugs(pCategory.category)) }}" class="product-category">
+        <span class="badge bg-info me-1">{{ pCategory.category.name }}</span>
+    </a>
+{% endfor %}
+{# TODO: edit paths to make it work #}

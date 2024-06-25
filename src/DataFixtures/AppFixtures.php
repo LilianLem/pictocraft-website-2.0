@@ -421,8 +421,14 @@ class AppFixtures extends Fixture
 
         // ----- Category ----- \\
 
+        /** @var Category[] $firstLevelCategories */
+        $firstLevelCategories = [];
+        /** @var Category[] $enabledFirstLevelCategories */
+        $enabledFirstLevelCategories = [];
         /** @var Category[] $categories */
         $categories = [];
+        /** @var Category[] $enabledCategories */
+        $enabledCategories = [];
 
         $category = new Category();
         $category->setName("Catégorie par défaut")
@@ -444,6 +450,14 @@ class AppFixtures extends Fixture
 
             $manager->persist($category);
 
+            $firstLevelCategories[] = $category;
+            $categories[] = $category;
+
+            if($category->isEnabled()) {
+                $enabledFirstLevelCategories[] = $category;
+                $enabledCategories[] = $category;
+            }
+
             /** @var string[] $subcategoriesNameIndex */
             $subcategoriesNameIndex = [];
 
@@ -451,7 +465,7 @@ class AppFixtures extends Fixture
             for($sc = 1; $sc <= mt_rand(1, 3); $sc++) {
                 $subcategory = new Category();
                 $subcategory->setName($this->generateRandomName(200, fn():string => $this->faker->department(2), $subcategoriesNameIndex))
-                    ->setEnabled($this->faker->boolean(90))
+                    ->setEnabled($category->isEnabled() ? $this->faker->boolean(90) : false)
                     ->setHidden($this->faker->boolean(20))
                     ->setParent($category);
 
@@ -459,10 +473,16 @@ class AppFixtures extends Fixture
                     $subcategory->setDefaultVatRate($this->faker->randomElement($this->vatRates));
                 }
 
-                $manager->persist($subcategory);
-            }
+                // TODO: subcategory of subcategory (maximum level)
 
-            $categories[] = $category;
+                $manager->persist($subcategory);
+
+                $categories[] = $subcategory;
+
+                if($subcategory->isEnabled()) {
+                    $enabledCategories[] = $subcategory;
+                }
+            }
         }
 
         // ----- Attribute & Value ----- \\
@@ -597,12 +617,16 @@ class AppFixtures extends Fixture
             $i = 0;
             while($i < 50 && count($productCategories) < $categoriesNb) {
                 /** @var Category $category */
-                $category = $this->faker->randomElement($categories);
+                $category = $this->faker->randomElement($enabledCategories);
 
                 if(
                     !array_key_exists($category->getId(), $productCategories) &&
                     !array_key_exists($category->getParent()?->getId(), $productCategories) &&
-                    $category->getSubcategories()->forAll(fn(int $key, Category $sc) => !array_key_exists($sc->getId(), $productCategories))
+                    !array_key_exists($category->getParent()?->getParent()?->getId(), $productCategories) &&
+                    $category->getSubcategories()->forAll(
+                        fn(int $key, Category $sc) => !array_key_exists($sc->getId(), $productCategories) &&
+                            $sc->getSubcategories()->forAll(fn(int $key2, Category $ssc) => !array_key_exists($ssc->getId(), $productCategories))
+                    )
                 ) {
                     $productCategories[$category->getId()] = $category;
                 }
@@ -648,7 +672,19 @@ class AppFixtures extends Fixture
         $discounts = [];
 
         /** @var array<int, Discount[]> $discountsByType */
-        $discountsByType = [];
+        $discountsByType = [
+            0 => [],
+            1 => [],
+            2 => [],
+            3 => [],
+            4 => [],
+            5 => [],
+            6 => [],
+            7 => [],
+            8 => [],
+            9 => [],
+            10 => []
+        ];
 
         // Indicative array to understand operations below
         $discountTypesArray = [
@@ -660,12 +696,13 @@ class AppFixtures extends Fixture
             5 => "oneOfTwoProductsOnCheapestProductNoMinimumAmount",
             6 => "oneProductOneRoleOnProductNoMinimumAmount",
             7 => "oneCategoryOneRoleOnEligibleProductsNoMinimumAmount",
-            8 => "oneCategoryOnEligibleProductsNoMinimumAmount",
-            9 => "oneAttributeValueOnEligibleProductsNoMinimumAmount",
+            8 => "oneCategoryOneUserOnEligibleProductsWithMinimumAmount",
+            9 => "oneCategoryOneOfTwoAttributeValuesOnEligibleProductsNoMinimumAmount",
+            10 => "oneAttributeValueOnEligibleProductsNoMinimumAmount",
         ];
 
         for($d = 1; $d <= 50; $d++) {
-            $discountTypeIndex = $this->faker->randomDigit();
+            $discountTypeIndex = mt_rand(0, 10);
 
             /** @var ConstraintGroup $constraintGroups */
             $constraintGroups = [];
@@ -679,7 +716,7 @@ class AppFixtures extends Fixture
                 $discountProduct = $this->faker->randomElement($products_notPhysicalNotFree);
 
                 $constraintGroup->addConstraint((new Constraint())->setProduct($discountProduct));
-            } elseif(in_array($discountTypeIndex, [7, 8])) {
+            } elseif(in_array($discountTypeIndex, [7, 8, 9])) {
                 /** @var Category $discountCategory */
                 $discountCategory = $this->faker->randomElement($categories);
 
@@ -693,7 +730,7 @@ class AppFixtures extends Fixture
                 }
             }
 
-            if(in_array($discountTypeIndex, [2, 3])) {
+            if(in_array($discountTypeIndex, [2, 3, 8])) {
                 /** @var User $discountUser */
                 $discountUser = $this->faker->randomElement($users);
 
@@ -703,7 +740,7 @@ class AppFixtures extends Fixture
                 $discountRole = $this->faker->randomElement($roles);
 
                 $constraintGroup->addConstraint((new Constraint())->setRole($discountRole));
-            } elseif($discountTypeIndex === 8) {
+            } elseif($discountTypeIndex === 9) {
                 /** @var Attribute[] $discountAttributes */
                 $discountAttributes = $this->faker->randomElements($attributes, 2);
 
@@ -718,7 +755,7 @@ class AppFixtures extends Fixture
                 }
 
                 $constraintGroups[] = $constraintGroup2;
-            } elseif($discountTypeIndex === 9) {
+            } elseif($discountTypeIndex === 10) {
                 /** @var Attribute $discountAttribute */
                 $discountAttribute = $this->faker->randomElement($attributes);
 
@@ -726,20 +763,22 @@ class AppFixtures extends Fixture
                 $discountAttrValue = $this->faker->randomElement($discountAttribute->getAttributeValues());
 
                 $constraintGroup->addConstraint((new Constraint())->setAttributeValue($discountAttrValue));
-            } elseif($discountTypeIndex < 2) {
+            }
+
+            if(in_array($discountTypeIndex, [0, 1, 8])) {
                 $constraintGroup->addConstraint((new Constraint())->setMinOrderAmount(mt_rand(500, 5000)));
             }
 
             $constraintGroups[] = $constraintGroup;
 
-            $appliesOn = match(true) {
-                $discountTypeIndex < 3 => DiscountAppliesOnEnum::ORDER,
-                $discountTypeIndex < 7 => DiscountAppliesOnEnum::CHEAPEST_ELIGIBLE_PRODUCT,
+            $appliesOn = match($discountTypeIndex) {
+                0, 1, 2 => DiscountAppliesOnEnum::ORDER,
+                5 => DiscountAppliesOnEnum::CHEAPEST_ELIGIBLE_PRODUCT,
                 default => DiscountAppliesOnEnum::ALL_ELIGIBLE_PRODUCTS
             };
 
             $discountMethod = match($discountTypeIndex) {
-                1, 7, 8, 9 => "percentage",
+                1, 7, 8, 9, 10 => "percentage",
                 2 => "fixed",
                 default => $this->faker->boolean() ? "percentage" : "fixed"
             };
@@ -755,8 +794,8 @@ class AppFixtures extends Fixture
             }
 
             $priority = match($discountTypeIndex) {
-                8, 9 => -3,
-                7 => -2,
+                9, 10 => -3,
+                7, 8 => -2,
                 5 => -1,
                 0 => 1,
                 2, 6 => 2,
@@ -803,9 +842,10 @@ class AppFixtures extends Fixture
             4 => [5, 6],
             5 => [4],
             6 => [4],
-            7 => [8, 9],
-            8 => [7, 9],
-            9 => [7, 8]
+            7 => [8, 9, 10],
+            8 => [7, 9, 10],
+            9 => [7, 8, 10],
+            10 => [7, 8, 9]
         ];
 
         foreach($discountsByType as $discountType => $discounts) {

@@ -4,6 +4,7 @@ body {
     header#main-header {
         position: sticky;
         top: 0;
+        z-index: 20;
 
         @include media-breakpoint-down(md) {
             display: flex;
@@ -123,6 +124,7 @@ body {
         position: sticky;
         bottom: 0;
         backdrop-filter: blur(25px);
+        z-index: 20;
 
         nav {
             width: calc(100% - 10px);

@@ -5,6 +5,7 @@ namespace App\Repository\Shop;
 use App\Entity\Shop\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Exception;
 
 /**
  * @extends ServiceEntityRepository<Product>
@@ -37,6 +38,50 @@ class ProductRepository extends ServiceEntityRepository
         if ($flush) {
             $this->getEntityManager()->flush();
         }
+    }
+
+    public function findOneBySlugs(string $slug, string $categorySlug, ?string $parentCategorySlug = null, ?string $parentParentCategorySlug = null): ?Product
+    {
+        if($parentParentCategorySlug && !$parentCategorySlug) {
+            throw new Exception("Impossible de rechercher un produit correspondant : la première catégorie parente n'est pas renseignée alors que la deuxième l'est.");
+        }
+
+        $parameters = [
+            "enabled" => true,
+            "slug" => $slug,
+            "isMain" => true,
+            "categorySlug" => $categorySlug
+        ];
+
+        $query = $this->createQueryBuilder("p")
+            ->leftJoin("p.productCategories", "pcat")
+            ->leftJoin("pcat.category", "c")
+            ->where("p.enabled = :enabled")
+            ->andWhere("p.slug = :slug")
+            ->andWhere("pcat.main = :isMain")
+            ->andWhere("c.slug = :categorySlug")
+            ->andWhere("c.enabled = :enabled")
+        ;
+
+        if($parentCategorySlug) {
+            $query->leftJoin("c.parent", "pc")
+                ->andWhere("pc.slug = :parentCategorySlug");
+
+            $parameters["parentCategorySlug"] = $parentCategorySlug;
+
+            if($parentParentCategorySlug) {
+                $query->leftJoin("pc.parent", "ppc")
+                    ->andWhere("ppc.slug = :parentParentCategorySlug");
+
+                $parameters["parentParentCategorySlug"] = $parentParentCategorySlug;
+            } else {
+                $query->andWhere("pc.parent IS NULL");
+            }
+        } else {
+            $query->andWhere("c.parent IS NULL");
+        }
+
+        return $query->setParameters($parameters)->getQuery()->getOneOrNullResult();
     }
 
 //    /**

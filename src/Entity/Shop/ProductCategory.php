@@ -18,13 +18,13 @@ use Symfony\Component\Validator\Constraints as Assert;
 class ProductCategory
 {
     #[ORM\Id]
-    #[ORM\ManyToOne(inversedBy: 'productCategories')]
+    #[ORM\ManyToOne(inversedBy: 'productCategories', fetch: "EAGER")]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
     private ?Product $product = null;
 
     #[ORM\Id]
-    #[ORM\ManyToOne(inversedBy: 'categoryProducts')]
+    #[ORM\ManyToOne(inversedBy: 'categoryProducts', fetch: "EAGER")]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotBlank]
     private ?Category $category = null;

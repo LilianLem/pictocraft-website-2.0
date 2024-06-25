@@ -36,6 +36,7 @@ class Category
     #[Assert\NotBlank]
     private ?string $name = null;
 
+    // TODO: empêcher le slug d'être identique à un produit
     #[ORM\Column(length: 32)]
     #[Assert\Length(max: 32, maxMessage: "Le slug ne doit pas dépasser {{ limit }} caractères")]
     #[Assert\NotBlank]
@@ -49,11 +50,12 @@ class Category
     #[Assert\NotBlank]
     private ?bool $enabled = null;
 
-    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'getSubcategories')]
+    // Maximum nested category level : 3 (a category can only have a parent which has no parent, or a parent with a parent which has no parent)
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'subcategories', fetch: "EAGER")]
     #[ORM\JoinColumn(onDelete: "CASCADE")]
     private ?self $parent = null;
 
-    #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class)]
+    #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class, fetch: "EAGER")]
     private Collection $subcategories;
 
     #[ORM\OneToMany(mappedBy: 'category', targetEntity: ProductCategory::class, orphanRemoval: true)]

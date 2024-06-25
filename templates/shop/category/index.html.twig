@@ -1,0 +1,51 @@
+{% extends "shop/base.html.twig" %}
+
+{% block title %}{{ category.name }}{% endblock %}
+
+{% block body %}
+    <main class="pt-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path("home") }}">Accueil</a></li>
+            <li class="breadcrumb-item"><a href="{{ path("shop_home") }}">Boutique</a></li>
+            {% if category.parent %}
+                {% if category.parent.parent %}
+                    <li class="breadcrumb-item"><a href="{{ path("shop_details", categoryService.routeSlugs(category.parent.parent)) }}">{{ category.parent.parent.name }}</a></li>
+                {% endif %}
+                <li class="breadcrumb-item"><a href="{{ path("shop_details", categoryService.routeSlugs(category.parent)) }}">{{ category.parent.name }}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active">{{ category.name }}</li>
+        </ol>
+
+        <h1>{{ category.name }}</h1>
+
+        {% if subcategories is not empty %}
+            <section id="subcategories">
+                <h2>Sous-catégories</h2>
+
+                <div class="row">
+                    {% for subcategory in subcategories %}
+                        <div class="col-3">
+                            {% include "shop/category/_category-card.html.twig" with {"category": subcategory} %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        <section id="products">
+            <h2>Produits</h2>
+
+            {% if products is not empty %}
+                <div class="row">
+                    {% for product in products %}
+                        <div class="col-3">
+                            {% include "shop/product/_product-card.html.twig" with {"product": product, "preCartFinalPriceInfo": discountService.getProductDiscountInfo(product, app.user)} %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>Il n'y a aucun produit dans cette catégorie !</p>
+            {% endif %}
+        </section>
+    </main>
+{% endblock %}
